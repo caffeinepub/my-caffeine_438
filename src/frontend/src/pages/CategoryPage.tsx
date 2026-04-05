@@ -1,10 +1,50 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, ExternalLink, User } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  ExternalLink,
+  Flag,
+  Globe,
+  Heart,
+  MapPin,
+  Sprout,
+  Star,
+  Trophy,
+  User,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   useArticlesByCategory,
   useRSSItemsByCategory,
 } from "../hooks/useQueries";
 import { Link, useParams } from "../router";
+
+type CategoryConfig = {
+  color: string;
+  lightBg: string;
+  icon: LucideIcon;
+};
+
+const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
+  "স্থানীয় খবর": { color: "bg-green-700", lightBg: "bg-green-50", icon: MapPin },
+  "জাতীয় খবর": { color: "bg-red-700", lightBg: "bg-red-50", icon: Flag },
+  "আন্তর্জাতিক খবর": { color: "bg-blue-700", lightBg: "bg-blue-50", icon: Globe },
+  শিক্ষা: { color: "bg-yellow-600", lightBg: "bg-yellow-50", icon: BookOpen },
+  স্বাস্থ্য: { color: "bg-teal-600", lightBg: "bg-teal-50", icon: Heart },
+  কৃষি: { color: "bg-lime-700", lightBg: "bg-lime-50", icon: Sprout },
+  খেলাধুলা: { color: "bg-orange-600", lightBg: "bg-orange-50", icon: Trophy },
+  "ধর্মীয় অনুষ্ঠান": {
+    color: "bg-purple-700",
+    lightBg: "bg-purple-50",
+    icon: Star,
+  },
+};
+
+const DEFAULT_CONFIG: CategoryConfig = {
+  color: "bg-news-red",
+  lightBg: "bg-red-50",
+  icon: Flag,
+};
 
 function getSourceColor(source: string): string {
   if (source.includes("BBC") || source.includes("বিবিসি"))
@@ -28,11 +68,36 @@ export default function CategoryPage() {
   const { data: rssItems = [], isLoading: rssLoading } =
     useRSSItemsByCategory(category);
 
+  const config = CATEGORY_CONFIG[category] ?? DEFAULT_CONFIG;
+  const CategoryIcon = config.icon;
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8" data-ocid="category.page">
-      {/* Section header */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-1 h-8 bg-news-red rounded-full" />
+      {/* Breadcrumb */}
+      <nav
+        className="flex items-center gap-2 text-sm text-news-gray mb-6"
+        aria-label="breadcrumb"
+      >
+        <Link
+          to="/"
+          className="hover:text-news-red transition-colors"
+          data-ocid="category.link"
+        >
+          হোম
+        </Link>
+        <span>/</span>
+        <span className="text-news-charcoal font-medium">{category}</span>
+      </nav>
+
+      {/* Section header with category color */}
+      <div
+        className={`flex items-center gap-4 mb-8 p-5 rounded-lg ${config.lightBg} border-l-4 ${config.color.replace("bg-", "border-")}`}
+      >
+        <div
+          className={`${config.color} text-white w-12 h-12 flex items-center justify-center rounded-lg flex-shrink-0`}
+        >
+          <CategoryIcon className="w-6 h-6" />
+        </div>
         <div>
           <h1 className="text-2xl font-bold text-news-charcoal">{category}</h1>
           <p className="text-sm text-news-gray">{category} বিভাগের সকল সংবাদ</p>
@@ -69,6 +134,11 @@ export default function CategoryPage() {
             className="text-center py-16 text-news-gray"
             data-ocid="category.empty_state"
           >
+            <div
+              className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${config.lightBg} mb-4`}
+            >
+              <CategoryIcon className="w-8 h-8 text-news-gray" />
+            </div>
             <p className="text-xl mb-2">কোনো সংবাদ পাওয়া যায়নি</p>
             <p className="text-sm">এই বিভাগে এখনো কোনো সংবাদ প্রকাশিত হয়নি।</p>
           </div>
@@ -98,7 +168,9 @@ export default function CategoryPage() {
                 />
               </div>
               <div className="p-4 flex flex-col flex-1">
-                <span className="inline-block bg-news-red text-white text-xs font-bold px-2 py-0.5 rounded-sm mb-2 self-start">
+                <span
+                  className={`inline-block ${config.color} text-white text-xs font-bold px-2 py-0.5 rounded-sm mb-2 self-start`}
+                >
                   {article.category}
                 </span>
                 <Link
@@ -131,7 +203,7 @@ export default function CategoryPage() {
       {(rssLoading || rssItems.length > 0) && (
         <div data-ocid="category.section">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-1 h-6 bg-blue-500 rounded-full" />
+            <div className={`w-1 h-6 ${config.color} rounded-full`} />
             <h2 className="text-xl font-bold text-news-charcoal">
               অনলাইন সংবাদ ফিড
             </h2>

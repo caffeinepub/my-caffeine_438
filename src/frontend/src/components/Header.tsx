@@ -5,13 +5,14 @@ import { useLogoUrl } from "../hooks/useQueries";
 import { Link } from "../router";
 
 const NAV_CATEGORIES = [
-  { label: "রাজনীতি", slug: "রাজনীতি" },
-  { label: "খেলাধুলা", slug: "খেলাধুলা" },
-  { label: "বিনোদন", slug: "বিনোদন" },
-  { label: "আন্তর্জাতিক", slug: "আন্তর্জাতিক" },
-  { label: "প্রযুক্তি", slug: "প্রযুক্তি" },
-  { label: "অর্থনীতি", slug: "অর্থনীতি" },
+  { label: "স্থানীয় খবর", slug: "স্থানীয় খবর" },
+  { label: "জাতীয় খবর", slug: "জাতীয় খবর" },
+  { label: "আন্তর্জাতিক খবর", slug: "আন্তর্জাতিক খবর" },
+  { label: "শিক্ষা", slug: "শিক্ষা" },
   { label: "স্বাস্থ্য", slug: "স্বাস্থ্য" },
+  { label: "কৃষি", slug: "কৃষি" },
+  { label: "খেলাধুলা", slug: "খেলাধুলা" },
+  { label: "ধর্মীয় অনুষ্ঠান", slug: "ধর্মীয় অনুষ্ঠান" },
 ];
 
 function formatBengaliDate() {
@@ -124,12 +125,12 @@ export default function Header() {
       {/* Navigation bar */}
       <nav className="bg-news-red text-white" aria-label="মূল নেভিগেশন">
         <div className="max-w-7xl mx-auto px-4">
-          <ul className="hidden md:flex items-center gap-0">
+          <ul className="hidden md:flex items-center gap-0 overflow-x-auto">
             {NAV_CATEGORIES.map((cat) => (
               <li key={cat.slug}>
                 <Link
                   to={`/category/${encodeURIComponent(cat.slug)}`}
-                  className="block px-4 py-3 text-sm font-semibold hover:bg-news-red-dark transition-colors whitespace-nowrap"
+                  className="block px-3 py-3 text-sm font-semibold hover:bg-news-red-dark transition-colors whitespace-nowrap"
                   data-ocid="header.link"
                 >
                   {cat.label}
