@@ -66,7 +66,7 @@ export default function Header() {
   return (
     <header className="w-full">
       {/* Top masthead */}
-      <div className="bg-white border-b border-border px-4 py-3">
+      <div className="bg-black border-b border-gray-800 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo + site name */}
           <Link
@@ -75,10 +75,10 @@ export default function Header() {
             data-ocid="header.link"
           >
             <div
-              className="w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden rounded-lg"
+              className="w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden rounded-full"
               style={{
-                background: "rgba(255,255,255,0.95)",
-                boxShadow: "0 0 0 2px rgba(0,0,0,0.07)",
+                background: "#000000",
+                boxShadow: "0 0 0 3px #000000",
               }}
             >
               {logoUrl && !logoImgError ? (
@@ -93,7 +93,7 @@ export default function Header() {
               )}
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-news-charcoal leading-tight tracking-tight">
+              <h1 className="text-2xl md:text-3xl font-bold text-white leading-tight tracking-tight">
                 {siteName.includes("নিউজ") ? (
                   <>
                     {siteName.replace(" নিউজ", "")}{" "}
@@ -103,7 +103,7 @@ export default function Header() {
                   siteName
                 )}
               </h1>
-              <p className="text-xs text-news-gray leading-none mt-0.5">
+              <p className="text-xs text-gray-300 leading-none mt-0.5">
                 {tagline}
               </p>
             </div>
@@ -111,24 +111,22 @@ export default function Header() {
 
           {/* Date + search */}
           <div className="hidden md:flex items-center gap-4">
-            <span className="text-sm text-news-gray">
-              {formatBengaliDate()}
-            </span>
+            <span className="text-sm text-gray-300">{formatBengaliDate()}</span>
             <button
               type="button"
               onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
+              className="p-2 rounded-full hover:bg-gray-800 transition-colors"
               aria-label="অনুসন্ধান"
               data-ocid="header.search_input"
             >
-              <Search className="w-5 h-5 text-news-gray" />
+              <Search className="w-5 h-5 text-gray-300" />
             </button>
           </div>
 
           {/* Mobile menu button */}
           <button
             type="button"
-            className="md:hidden p-2 rounded text-news-charcoal"
+            className="md:hidden p-2 rounded text-white"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="মেনু"
             data-ocid="header.toggle"
@@ -219,14 +217,14 @@ export default function Header() {
 
       {/* Search bar */}
       {searchOpen && (
-        <div className="bg-white border-b border-border px-4 py-3">
+        <div className="bg-black border-b border-gray-800 px-4 py-3">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-2">
-              <Search className="w-5 h-5 text-news-gray" />
+              <Search className="w-5 h-5 text-gray-300" />
               <input
                 type="text"
                 placeholder="সংবাদ অনুসন্ধান করুন..."
-                className="flex-1 outline-none text-foreground text-sm py-1"
+                className="flex-1 outline-none text-white bg-black text-sm py-1"
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setSearchOpen(false);
                 }}

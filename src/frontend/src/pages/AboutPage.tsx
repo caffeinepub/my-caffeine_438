@@ -24,10 +24,10 @@ export default function AboutPage() {
           <div className="flex items-center justify-center gap-3 mb-4">
             {logoUrl && !logoImgError ? (
               <div
-                className="w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden rounded-lg"
+                className="w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden rounded-full"
                 style={{
-                  background: "rgba(255,255,255,0.95)",
-                  boxShadow: "0 0 0 2px rgba(255,255,255,0.2)",
+                  background: "#000000",
+                  boxShadow: "0 0 0 3px #000000",
                 }}
               >
                 <img
