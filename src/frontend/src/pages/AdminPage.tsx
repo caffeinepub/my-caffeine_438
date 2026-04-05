@@ -28,6 +28,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  ImageIcon,
   Loader2,
   LogIn,
   LogOut,
@@ -50,8 +51,10 @@ import {
   useCategories,
   useDeleteArticle,
   useIsAdmin,
+  useLogoUrl,
   useRemoveCategory,
   useSetBreakingNewsText,
+  useSetLogoUrl,
   useUpdateArticle,
 } from "../hooks/useQueries";
 
@@ -642,6 +645,140 @@ function CategoriesTab() {
   );
 }
 
+function LogoTab() {
+  const { data: currentLogoUrl = "", isLoading } = useLogoUrl();
+  const setLogoUrl = useSetLogoUrl();
+  const [url, setUrl] = useState("");
+  const [initialized, setInitialized] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+
+  if (!initialized && !isLoading) {
+    setUrl(currentLogoUrl);
+    setInitialized(true);
+  }
+
+  const handleSave = async () => {
+    try {
+      await setLogoUrl.mutateAsync(url.trim());
+      toast.success("লোগো আপডেট হয়েছে");
+      setPreviewError(false);
+    } catch {
+      toast.error("লোগো আপডেট করা যায়নি");
+    }
+  };
+
+  const handleRemove = async () => {
+    try {
+      await setLogoUrl.mutateAsync("");
+      setUrl("");
+      toast.success("লোগো মুছে ফেলা হয়েছে");
+    } catch {
+      toast.error("লোগো মুছে ফেলা যায়নি");
+    }
+  };
+
+  return (
+    <div className="max-w-2xl" data-ocid="admin.panel">
+      <h2 className="text-lg font-bold mb-1">লোগো ব্যবস্থাপনা</h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        পোর্টালের হেডারে প্রদর্শিত লোগোর URL দিন। লোগো না থাকলে ডিফল্ট আইকন দেখাবে।
+      </p>
+
+      {isLoading ? (
+        <div className="space-y-4" data-ocid="admin.loading_state">
+          <Skeleton className="h-32 w-48 rounded" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {/* Current logo preview */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">বর্তমান লোগো</Label>
+            <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-center min-h-[120px] w-48">
+              {currentLogoUrl && !previewError ? (
+                <img
+                  src={currentLogoUrl}
+                  alt="লোগো প্রিভিউ"
+                  className="max-h-20 max-w-full object-contain"
+                  onError={() => setPreviewError(true)}
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <ImageIcon className="w-8 h-8" />
+                  <span className="text-xs">লোগো নেই</span>
+                </div>
+              )}
+            </div>
+            {currentLogoUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRemove}
+                disabled={setLogoUrl.isPending}
+                className="mt-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                data-ocid="admin.secondary_button"
+              >
+                <X className="w-3.5 h-3.5 mr-1" />
+                লোগো মুছুন
+              </Button>
+            )}
+          </div>
+
+          {/* Logo URL input */}
+          <div className="space-y-2">
+            <Label htmlFor="logoUrl">লোগোর URL</Label>
+            <Input
+              id="logoUrl"
+              value={url}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                setPreviewError(false);
+              }}
+              placeholder="https://example.com/logo.png"
+              data-ocid="admin.input"
+            />
+            <p className="text-xs text-muted-foreground">
+              লোগোর ছবির সরাসরি লিংক দিন (PNG, JPG, SVG সমর্থিত)
+            </p>
+          </div>
+
+          {/* Live preview of entered URL */}
+          {url && url !== currentLogoUrl && (
+            <div>
+              <Label className="text-sm font-medium mb-2 block">প্রিভিউ</Label>
+              <div className="border rounded-lg p-4 bg-muted/30 flex items-center justify-center w-48 min-h-[80px]">
+                <img
+                  src={url}
+                  alt="নতুন লোগো প্রিভিউ"
+                  className="max-h-16 max-w-full object-contain"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display =
+                      "none";
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={handleSave}
+            disabled={setLogoUrl.isPending || isLoading}
+            className="bg-news-red hover:bg-news-red-dark text-white"
+            data-ocid="admin.save_button"
+          >
+            {setLogoUrl.isPending ? (
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-1" />
+            )}
+            লোগো সংরক্ষণ করুন
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BreakingNewsTab() {
   const { data: currentText = "", isLoading } = useBreakingNewsText();
   const setBreakingNewsText = useSetBreakingNewsText();
@@ -812,6 +949,9 @@ export default function AdminPage() {
           <TabsTrigger value="breaking" data-ocid="admin.tab">
             ব্রেকিং নিউজ
           </TabsTrigger>
+          <TabsTrigger value="logo" data-ocid="admin.tab">
+            লোগো
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="articles">
@@ -822,6 +962,9 @@ export default function AdminPage() {
         </TabsContent>
         <TabsContent value="breaking">
           <BreakingNewsTab />
+        </TabsContent>
+        <TabsContent value="logo">
+          <LogoTab />
         </TabsContent>
       </Tabs>
     </div>

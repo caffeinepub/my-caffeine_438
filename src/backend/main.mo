@@ -48,6 +48,7 @@ actor {
   let articles = Map.empty<Nat, Article>();
   var categories : [Text] = ["রাজনীতি", "খেলাধুলা", "বিনোদন", "আন্তর্জাতিক", "প্রযুক্তি", "অর্থনীতি", "স্বাস্থ্য"];
   var breakingNewsText : Text = "ঢাকায় আজ বড় ট্রাফিক জ্যাম • সংসদে নতুন বিল পাস • আন্তর্জাতিক ক্রিকেট দলের বাংলাদেশ সফর নিশ্চিত • ঢাকা স্টক এক্সচেঞ্জে সূচক বৃদ্ধি • নতুন শিক্ষা নীতি ঘোষণা";
+  var logoUrl : Text = "";
 
   // ---- Seed data initialization ----
   do {
@@ -288,5 +289,17 @@ actor {
       Runtime.trap("Unauthorized");
     };
     breakingNewsText := text;
+  };
+
+  // ---- Logo ----
+  public query func getLogoUrl() : async Text {
+    logoUrl;
+  };
+
+  public shared ({ caller }) func setLogoUrl(url : Text) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can update logo");
+    };
+    logoUrl := url;
   };
 };

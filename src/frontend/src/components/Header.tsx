@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Menu, Newspaper, Search, X } from "lucide-react";
 import { useState } from "react";
+import { useLogoUrl } from "../hooks/useQueries";
 import { Link } from "../router";
 
 const NAV_CATEGORIES = [
@@ -51,6 +52,8 @@ function formatBengaliDate() {
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [logoImgError, setLogoImgError] = useState(false);
+  const { data: logoUrl = "" } = useLogoUrl();
 
   return (
     <header className="w-full">
@@ -63,15 +66,24 @@ export default function Header() {
             className="flex items-center gap-3"
             data-ocid="header.link"
           >
-            <div className="bg-news-red text-white w-12 h-12 flex items-center justify-center rounded font-bold text-lg flex-shrink-0">
-              <Newspaper className="w-6 h-6" />
+            <div className="bg-news-red text-white w-12 h-12 flex items-center justify-center rounded font-bold text-lg flex-shrink-0 overflow-hidden">
+              {logoUrl && !logoImgError ? (
+                <img
+                  src={logoUrl}
+                  alt="বালিগাঁও নিউজ লোগো"
+                  className="w-full h-full object-contain"
+                  onError={() => setLogoImgError(true)}
+                />
+              ) : (
+                <Newspaper className="w-6 h-6" />
+              )}
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-news-charcoal leading-tight tracking-tight">
-                দেশের খবর
+                বালিগাঁও <span className="text-news-red">নিউজ</span>
               </h1>
               <p className="text-xs text-news-gray leading-none mt-0.5">
-                বাংলাদেশের বিশ্বস্ত সংবাদ
+                বালিগাঁওয়ের বিশ্বস্ত সংবাদ
               </p>
             </div>
           </Link>

@@ -17,13 +17,13 @@ export default function Footer() {
                 <Newspaper className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold">দেশের খবর</h3>
-                <p className="text-xs text-white/60">বাংলাদেশের বিশ্বস্ত সংবাদ</p>
+                <h3 className="text-lg font-bold">বালিগাঁও নিউজ</h3>
+                <p className="text-xs text-white/60">বালিগাঁওয়ের বিশ্বস্ত সংবাদ</p>
               </div>
             </div>
             <p className="text-sm text-white/60 leading-relaxed">
-              দেশের খবর বাংলাদেশের একটি বিশ্বস্ত অনলাইন সংবাদ মাধ্যম। আমরা সত্য, নিরপেক্ষ ও
-              সময়মতো সংবাদ পরিবেশনে প্রতিশ্রুতিবদ্ধ।
+              বালিগাঁও নিউজ বালিগাঁওয়ের একটি বিশ্বস্ত অনলাইন সংবাদ মাধ্যম। আমরা সত্য, নিরপেক্ষ
+              ও সময়মতো সংবাদ পরিবেশনে প্রতিশ্রুতিবদ্ধ।
             </p>
           </div>
 
@@ -53,16 +53,16 @@ export default function Footer() {
               যোগাযোগ
             </h4>
             <address className="not-italic text-sm text-white/60 space-y-1">
-              <p>ঢাকা, বাংলাদেশ</p>
-              <p>সম্পাদকীয়: editor@desherkhabor.bd</p>
-              <p>বিজ্ঞাপন: ads@desherkhabor.bd</p>
+              <p>বালিগাঁও, পশ্চিমবঙ্গ</p>
+              <p>সম্পাদকীয়: editor@baligawnews.com</p>
+              <p>বিজ্ঞাপন: ads@baligawnews.com</p>
             </address>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/50">
-          <p>© {year} দেশের খবর। সর্বস্বত্ব সংরক্ষিত।</p>
+          <p>© {year} বালিগাঁও নিউজ। সর্বস্বত্ব সংরক্ষিত।</p>
           <p>
             Built with ♥ using{" "}
             <a

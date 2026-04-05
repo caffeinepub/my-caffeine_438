@@ -90,6 +90,33 @@ export function useIsAdmin() {
   });
 }
 
+export function useLogoUrl() {
+  const { actor, isFetching } = useActor();
+  return useQuery<string>({
+    queryKey: ["logoUrl"],
+    queryFn: async () => {
+      if (!actor) return "";
+      return (actor as any).getLogoUrl();
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 60_000,
+  });
+}
+
+export function useSetLogoUrl() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (url: string) => {
+      if (!actor) throw new Error("Actor not available");
+      return (actor as any).setLogoUrl(url);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["logoUrl"] });
+    },
+  });
+}
+
 export function useAddArticle() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
