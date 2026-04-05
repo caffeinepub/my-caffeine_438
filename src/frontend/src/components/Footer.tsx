@@ -2,16 +2,25 @@ import { Newspaper } from "lucide-react";
 import { useSiteSettings } from "../hooks/useQueries";
 import { Link } from "../router";
 
-const NAV_CATEGORIES = ["রাজনীতি", "খেলাধুলা", "বিনোদন", "আন্তর্জাতিক", "প্রযুক্তি"];
+const NAV_CATEGORIES = [
+  "স্থানীয় খবর",
+  "জাতীয় খবর",
+  "আন্তর্জাতিক খবর",
+  "শিক্ষা",
+  "স্বাস্থ্য",
+  "কৃষি",
+  "খেলাধুলা",
+  "ধর্মীয় অনুষ্ঠান",
+];
 
 export default function Footer() {
   const year = new Date().getFullYear();
   const { data: settings } = useSiteSettings();
 
   const siteName = settings?.siteName || "বালিগাঁও নিউজ";
-  const tagline = settings?.tagline || "বালিগাঁওয়ের বিশ্বস্ত সংবাদ";
+  const tagline = settings?.tagline || "Voice of Truth and Freedom";
   const contactEmail = settings?.contactEmail || "baligawnews.bd@gmail.com";
-  const address = settings?.address || "বালিগাঁও, পশ্চিমবঙ্গ";
+  const address = settings?.address || "";
   const editorEmail = settings?.editorEmail || "";
 
   return (
@@ -30,7 +39,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm text-white/60 leading-relaxed">
-              {siteName} বালিগাঁওয়ের একটি বিশ্বস্ত অনলাইন সংবাদ মাধ্যম। আমরা সত্য, নিরপেক্ষ
+              {siteName} বালিগাঁওয়ের একটি বিশ্বস্ত অনলাইন সংবাদ মাধ্যম। আমরা সত্য, নিরপেক্ষ
               ও সময়মতো সংবাদ পরিবেশনে প্রতিশ্রুতিবদ্ধ।
             </p>
           </div>

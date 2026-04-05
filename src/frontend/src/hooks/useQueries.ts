@@ -42,6 +42,42 @@ export type SiteSettings = {
   reporters: Reporter[];
 };
 
+// ─── localStorage keys ─────────────────────────────────────────────────────────
+const LOGO_URL_KEY = "baligaw_logoUrl";
+const SETTINGS_KEY = "baligaw_siteSettings";
+
+const DEFAULT_LOGO_URL =
+  "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL";
+
+const DEFAULT_SETTINGS: SiteSettings = {
+  siteName: "বালিগাঁও নিউজ",
+  tagline: "Voice of Truth and Freedom",
+  contactEmail: "baligawnews.bd@gmail.com",
+  footerText: "",
+  editorName: "",
+  editorEmail: "",
+  editorPhone: "",
+  address: "",
+  reporters: [],
+};
+
+function loadSettingsFromStorage(): SiteSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<SiteSettings>;
+      return { ...DEFAULT_SETTINGS, ...parsed };
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return { ...DEFAULT_SETTINGS };
+}
+
+function saveSettingsToStorage(settings: SiteSettings): void {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
 // ─── Existing hooks ────────────────────────────────────────────────────────────────
 
 export function usePublishedArticles() {
@@ -134,10 +170,6 @@ export function useCategories() {
     enabled: !!actor && !isFetching,
   });
 }
-
-const LOGO_URL_KEY = "baligaw_logoUrl";
-const DEFAULT_LOGO_URL =
-  "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL";
 
 export function useLogoUrl() {
   return useQuery<string>({
@@ -386,36 +418,31 @@ export function useToggleFeedSource() {
   });
 }
 
+/**
+ * useSiteSettings — reads from localStorage instantly (no actor needed).
+ * This guarantees all components always show the latest saved settings
+ * immediately after saving, without any backend round-trip.
+ */
 export function useSiteSettings() {
-  const { actor, isFetching } = useActor();
   return useQuery<SiteSettings>({
     queryKey: ["siteSettings"],
     queryFn: async () => {
-      if (!actor)
-        return {
-          siteName: "",
-          tagline: "",
-          contactEmail: "",
-          footerText: "",
-          editorName: "",
-          editorEmail: "",
-          editorPhone: "",
-          address: "",
-          reporters: [],
-        };
-      return (actor as any).getSiteSettings();
+      return loadSettingsFromStorage();
     },
-    enabled: !!actor && !isFetching,
+    staleTime: 0,
   });
 }
 
+/**
+ * useUpdateSiteSettings — saves to localStorage and invalidates the query
+ * so every component re-renders with the new data immediately.
+ */
 export function useUpdateSiteSettings() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (settings: SiteSettings) => {
-      if (!actor) throw new Error("Actor not available");
-      return (actor as any).updateSiteSettings(settings);
+      saveSettingsToStorage(settings);
+      return settings;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["siteSettings"] });

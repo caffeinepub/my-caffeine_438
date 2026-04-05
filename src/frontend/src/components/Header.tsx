@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Menu, Newspaper, Search, X } from "lucide-react";
 import { useState } from "react";
-import { useLogoUrl } from "../hooks/useQueries";
+import { useSiteSettings } from "../hooks/useQueries";
 import { Link } from "../router";
 
 const NAV_CATEGORIES = [
@@ -54,7 +54,15 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [logoImgError, setLogoImgError] = useState(false);
-  const { data: logoUrl = "" } = useLogoUrl();
+  const { data: settings } = useSiteSettings();
+
+  const siteName = settings?.siteName || "বালিগাঁও নিউজ";
+  const tagline = settings?.tagline || "Voice of Truth and Freedom";
+  const logoUrl =
+    settings?.tagline !== undefined
+      ? localStorage.getItem("baligaw_logoUrl") ||
+        "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL"
+      : "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL";
 
   return (
     <header className="w-full">
@@ -81,10 +89,17 @@ export default function Header() {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-news-charcoal leading-tight tracking-tight">
-                বালিগাঁও <span className="text-news-red">নিউজ</span>
+                {siteName.includes("নিউজ") ? (
+                  <>
+                    {siteName.replace(" নিউজ", "")}{" "}
+                    <span className="text-news-red">নিউজ</span>
+                  </>
+                ) : (
+                  siteName
+                )}
               </h1>
               <p className="text-xs text-news-gray leading-none mt-0.5">
-                বালিগাঁওয়ের বিশ্বস্ত সংবাদ
+                {tagline}
               </p>
             </div>
           </Link>
