@@ -34,62 +34,62 @@ function getSourceColor(source: string): string {
   return "bg-news-red text-white";
 }
 
-// Category-specific Unsplash images (reliable, no API key needed)
+// Category-specific picsum.photos images with stable seeds
 const CATEGORY_IMAGE_SETS: Record<string, string[]> = {
   "স্থানীয় খবর": [
-    "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=400&h=225&fit=crop",
+    "https://picsum.photos/seed/local1/400/225",
+    "https://picsum.photos/seed/local2/400/225",
+    "https://picsum.photos/seed/local3/400/225",
+    "https://picsum.photos/seed/local4/400/225",
   ],
   "জাতীয় খবর": [
-    "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1568992687947-868a62a9f521?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=225&fit=crop",
+    "https://picsum.photos/seed/national1/400/225",
+    "https://picsum.photos/seed/national2/400/225",
+    "https://picsum.photos/seed/national3/400/225",
+    "https://picsum.photos/seed/national4/400/225",
   ],
   "আন্তর্জাতিক খবর": [
-    "https://images.unsplash.com/photo-1476304884326-cd2c88572c5f?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1494522855154-9297ac14b55f?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&h=225&fit=crop",
+    "https://picsum.photos/seed/world1/400/225",
+    "https://picsum.photos/seed/world2/400/225",
+    "https://picsum.photos/seed/world3/400/225",
+    "https://picsum.photos/seed/world4/400/225",
   ],
   শিক্ষা: [
-    "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=400&h=225&fit=crop",
+    "https://picsum.photos/seed/edu1/400/225",
+    "https://picsum.photos/seed/edu2/400/225",
+    "https://picsum.photos/seed/edu3/400/225",
+    "https://picsum.photos/seed/edu4/400/225",
   ],
   স্বাস্থ্য: [
-    "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=225&fit=crop",
+    "https://picsum.photos/seed/health1/400/225",
+    "https://picsum.photos/seed/health2/400/225",
+    "https://picsum.photos/seed/health3/400/225",
+    "https://picsum.photos/seed/health4/400/225",
   ],
   কৃষি: [
-    "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&h=225&fit=crop",
+    "https://picsum.photos/seed/farm1/400/225",
+    "https://picsum.photos/seed/farm2/400/225",
+    "https://picsum.photos/seed/farm3/400/225",
+    "https://picsum.photos/seed/farm4/400/225",
   ],
   খেলাধুলা: [
-    "https://images.unsplash.com/photo-1540747913346-19212a4cf528?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=400&h=225&fit=crop",
+    "https://picsum.photos/seed/sport1/400/225",
+    "https://picsum.photos/seed/sport2/400/225",
+    "https://picsum.photos/seed/sport3/400/225",
+    "https://picsum.photos/seed/sport4/400/225",
   ],
   "ধর্মীয় অনুষ্ঠান": [
-    "https://images.unsplash.com/photo-1564769662533-4f00a87b4056?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=225&fit=crop",
-    "https://images.unsplash.com/photo-1545259742-56fde9e7dad0?w=400&h=225&fit=crop",
+    "https://picsum.photos/seed/religion1/400/225",
+    "https://picsum.photos/seed/religion2/400/225",
+    "https://picsum.photos/seed/religion3/400/225",
+    "https://picsum.photos/seed/religion4/400/225",
   ],
 };
 
 const FALLBACK_IMAGES = [
-  "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=225&fit=crop",
-  "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400&h=225&fit=crop",
-  "https://images.unsplash.com/photo-1476304884326-cd2c88572c5f?w=400&h=225&fit=crop",
+  "https://picsum.photos/seed/news1/400/225",
+  "https://picsum.photos/seed/news2/400/225",
+  "https://picsum.photos/seed/news3/400/225",
 ];
 
 function getCategoryImage(category: string, id: bigint | number): string {
@@ -228,125 +228,135 @@ function NewsDetailModal({
   onClose: () => void;
 }) {
   const [imgError, setImgError] = useState(false);
-
-  if (!item) return null;
-  const imgSrc = getCategoryImage(item.category, item.id);
+  const isOpen = item !== null;
+  const imgSrc = item ? getCategoryImage(item.category, item.id) : "";
 
   return (
-    <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent
         className="max-w-2xl w-full p-0 overflow-hidden"
         data-ocid="rss.dialog"
       >
-        {/* Header */}
-        <DialogHeader className="px-6 pt-5 pb-0">
-          <div className="flex items-center gap-2 flex-wrap mb-3">
-            <span
-              className={`text-xs font-bold px-2.5 py-1 rounded-sm ${getSourceColor(item.source)}`}
-            >
-              {item.source}
-            </span>
-            {item.category && (
-              <Badge variant="outline" className="text-xs">
-                {item.category}
-              </Badge>
-            )}
-            {item.pubDate && (
-              <span className="text-xs text-news-gray ml-auto">
-                {item.pubDate}
-              </span>
-            )}
-          </div>
-          <DialogTitle className="text-lg font-bold text-news-charcoal leading-snug text-left">
-            {item.title}
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* Body */}
-        <div className="px-6 pb-6 pt-4 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
-          {/* Image */}
-          <div className="w-full aspect-video rounded-sm overflow-hidden bg-muted">
-            {!imgError ? (
-              <img
-                src={imgSrc}
-                alt={item.category}
-                className="w-full h-full object-cover"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                <span className="text-5xl">📰</span>
-              </div>
-            )}
-          </div>
-
-          {/* Description */}
-          {item.description ? (
-            <div className="bg-muted/40 rounded-sm p-4 border-l-4 border-news-red">
-              <p className="text-sm font-medium text-news-charcoal mb-1">
-                সংক্ষিপ্ত বিবরণ
-              </p>
-              <p className="text-sm text-news-charcoal leading-relaxed">
-                {item.description}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-muted/40 rounded-sm p-4 border-l-4 border-news-red">
-              <p className="text-sm text-news-gray italic">
-                বিস্তারিত বিবরণ পাওয়া যায়নি। মূল সংবাদ পড়তে নিচের লিংকে ক্লিক করুন।
-              </p>
-            </div>
-          )}
-
-          {/* Source reference */}
-          <div className="flex flex-col gap-2 pt-2 border-t border-border">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-news-gray">সূত্র:</span>
-              <span className="text-xs font-semibold text-news-charcoal">
-                {item.source}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-news-gray">রেফারেন্স লিংক:</span>
-              <a
-                href={item.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:underline break-all"
-                data-ocid="rss.link"
-              >
-                {item.link}
-              </a>
-            </div>
-            <div className="flex gap-2 mt-2">
-              <a
-                href={item.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-ocid="rss.link"
-                className="flex-1"
-              >
-                <Button
-                  size="sm"
-                  className="w-full bg-news-red hover:bg-news-red/90 text-white gap-1.5"
+        {item && (
+          <>
+            {/* Header */}
+            <DialogHeader className="px-6 pt-5 pb-0">
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                <span
+                  className={`text-xs font-bold px-2.5 py-1 rounded-sm ${getSourceColor(item.source)}`}
                 >
-                  মূল সংবাদ পড়ুন
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Button>
-              </a>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onClose}
-                className="gap-1.5"
-                data-ocid="rss.close_button"
-              >
-                <X className="w-3.5 h-3.5" />
-                বন্ধ করুন
-              </Button>
+                  {item.source}
+                </span>
+                {item.category && (
+                  <Badge variant="outline" className="text-xs">
+                    {item.category}
+                  </Badge>
+                )}
+                {item.pubDate && (
+                  <span className="text-xs text-news-gray ml-auto">
+                    {item.pubDate}
+                  </span>
+                )}
+              </div>
+              <DialogTitle className="text-lg font-bold text-news-charcoal leading-snug text-left">
+                {item.title}
+              </DialogTitle>
+            </DialogHeader>
+
+            {/* Body */}
+            <div className="px-6 pb-6 pt-4 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+              {/* Image */}
+              <div className="w-full aspect-video rounded-sm overflow-hidden bg-muted">
+                {!imgError ? (
+                  <img
+                    src={imgSrc}
+                    alt={item.category}
+                    className="w-full h-full object-cover"
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <span className="text-5xl">📰</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {item.description ? (
+                <div className="bg-muted/40 rounded-sm p-4 border-l-4 border-news-red">
+                  <p className="text-sm font-medium text-news-charcoal mb-1">
+                    সংক্ষিপ্ত বিবরণ
+                  </p>
+                  <p className="text-sm text-news-charcoal leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-muted/40 rounded-sm p-4 border-l-4 border-news-red">
+                  <p className="text-sm text-news-gray italic">
+                    বিস্তারিত বিবরণ পাওয়া যায়নি। মূল সংবাদ পড়তে নিচের লিংকে ক্লিক করুন।
+                  </p>
+                </div>
+              )}
+
+              {/* Source reference */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-news-gray">সূত্র:</span>
+                  <span className="text-xs font-semibold text-news-charcoal">
+                    {item.source}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-news-gray shrink-0">
+                    রেফারেন্স লিংক:
+                  </span>
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline break-all"
+                    data-ocid="rss.link"
+                  >
+                    {item.link}
+                  </a>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-ocid="rss.link"
+                    className="flex-1"
+                  >
+                    <Button
+                      size="sm"
+                      className="w-full bg-news-red hover:bg-news-red/90 text-white gap-1.5"
+                    >
+                      মূল সংবাদ পড়ুন
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Button>
+                  </a>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onClose}
+                    className="gap-1.5"
+                    data-ocid="rss.close_button"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    বন্ধ করুন
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -437,7 +447,10 @@ export default function RSSFeedSection() {
         >
           {items.map((item, i) => (
             <div key={Number(item.id)} data-ocid={`rss.item.${i + 1}`}>
-              <RSSCard item={item} onSelect={setSelectedItem} />
+              <RSSCard
+                item={item}
+                onSelect={(selected) => setSelectedItem(selected)}
+              />
             </div>
           ))}
         </div>
@@ -451,7 +464,7 @@ export default function RSSFeedSection() {
         </p>
       )}
 
-      {/* News Detail Modal */}
+      {/* News Detail Modal — always rendered, controlled by selectedItem state */}
       <NewsDetailModal
         item={selectedItem}
         onClose={() => setSelectedItem(null)}

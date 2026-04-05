@@ -1,3 +1,11 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BookOpen,
@@ -11,8 +19,11 @@ import {
   Star,
   Trophy,
   User,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
+import type { RSSItem } from "../hooks/useQueries";
 import {
   useArticlesByCategory,
   useRSSItemsByCategory,
@@ -60,23 +71,284 @@ function getSourceColor(source: string): string {
   return "bg-news-red text-white";
 }
 
-// Category-based placeholder images for RSS items
+// Category-specific picsum.photos images with stable seeds
+const CATEGORY_IMAGE_SETS: Record<string, string[]> = {
+  "স্থানীয় খবর": [
+    "https://picsum.photos/seed/local1/400/225",
+    "https://picsum.photos/seed/local2/400/225",
+    "https://picsum.photos/seed/local3/400/225",
+    "https://picsum.photos/seed/local4/400/225",
+  ],
+  "জাতীয় খবর": [
+    "https://picsum.photos/seed/national1/400/225",
+    "https://picsum.photos/seed/national2/400/225",
+    "https://picsum.photos/seed/national3/400/225",
+    "https://picsum.photos/seed/national4/400/225",
+  ],
+  "আন্তর্জাতিক খবর": [
+    "https://picsum.photos/seed/world1/400/225",
+    "https://picsum.photos/seed/world2/400/225",
+    "https://picsum.photos/seed/world3/400/225",
+    "https://picsum.photos/seed/world4/400/225",
+  ],
+  শিক্ষা: [
+    "https://picsum.photos/seed/edu1/400/225",
+    "https://picsum.photos/seed/edu2/400/225",
+    "https://picsum.photos/seed/edu3/400/225",
+    "https://picsum.photos/seed/edu4/400/225",
+  ],
+  স্বাস্থ্য: [
+    "https://picsum.photos/seed/health1/400/225",
+    "https://picsum.photos/seed/health2/400/225",
+    "https://picsum.photos/seed/health3/400/225",
+    "https://picsum.photos/seed/health4/400/225",
+  ],
+  কৃষি: [
+    "https://picsum.photos/seed/farm1/400/225",
+    "https://picsum.photos/seed/farm2/400/225",
+    "https://picsum.photos/seed/farm3/400/225",
+    "https://picsum.photos/seed/farm4/400/225",
+  ],
+  খেলাধুলা: [
+    "https://picsum.photos/seed/sport1/400/225",
+    "https://picsum.photos/seed/sport2/400/225",
+    "https://picsum.photos/seed/sport3/400/225",
+    "https://picsum.photos/seed/sport4/400/225",
+  ],
+  "ধর্মীয় অনুষ্ঠান": [
+    "https://picsum.photos/seed/religion1/400/225",
+    "https://picsum.photos/seed/religion2/400/225",
+    "https://picsum.photos/seed/religion3/400/225",
+    "https://picsum.photos/seed/religion4/400/225",
+  ],
+};
+
+const FALLBACK_IMAGES = [
+  "https://picsum.photos/seed/news1/400/225",
+  "https://picsum.photos/seed/news2/400/225",
+  "https://picsum.photos/seed/news3/400/225",
+];
+
 function getCategoryImage(category: string, id: bigint | number): string {
-  const seed = (Number(id) % 30) + 1;
-  const categoryImages: Record<string, string> = {
-    আন্তর্জাতিক: `https://picsum.photos/seed/intl${seed}/400/225`,
-    "আন্তর্জাতিক খবর": `https://picsum.photos/seed/world${seed}/400/225`,
-    রাজনীতি: `https://picsum.photos/seed/pol${seed}/400/225`,
-    "স্থানীয় খবর": `https://picsum.photos/seed/local${seed}/400/225`,
-    "জাতীয় খবর": `https://picsum.photos/seed/natl${seed}/400/225`,
-    শিক্ষা: `https://picsum.photos/seed/edu${seed}/400/225`,
-    স্বাস্থ্য: `https://picsum.photos/seed/health${seed}/400/225`,
-    কৃষি: `https://picsum.photos/seed/agri${seed}/400/225`,
-    খেলাধুলা: `https://picsum.photos/seed/sports${seed}/400/225`,
-    "ধর্মীয় অনুষ্ঠান": `https://picsum.photos/seed/relig${seed}/400/225`,
-  };
+  const images = CATEGORY_IMAGE_SETS[category] ?? FALLBACK_IMAGES;
+  const idx = Number(id) % images.length;
+  return images[idx];
+}
+
+// ─── RSS Card with click-to-open modal ────────────────────────────────────────
+function RSSCard({
+  item,
+  onSelect,
+}: {
+  item: RSSItem;
+  onSelect: (item: RSSItem) => void;
+}) {
+  const imgSrc = getCategoryImage(item.category, item.id);
+  const [imgError, setImgError] = useState(false);
+
   return (
-    categoryImages[category] ?? `https://picsum.photos/seed/news${seed}/400/225`
+    <div className="flex flex-col bg-card border border-border rounded-sm hover:border-news-red/30 hover:shadow-md transition-all overflow-hidden">
+      {/* Clickable image */}
+      <button
+        type="button"
+        className="aspect-video overflow-hidden bg-muted w-full cursor-pointer"
+        onClick={() => onSelect(item)}
+        aria-label={`সংবাদ পড়ুন: ${item.title}`}
+        data-ocid="category.open_modal_button"
+      >
+        {!imgError ? (
+          <img
+            src={imgSrc}
+            alt={item.category}
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+            <span className="text-3xl">📰</span>
+          </div>
+        )}
+      </button>
+      {/* Content */}
+      <div className="flex flex-col gap-2 p-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className={`text-xs font-bold px-2 py-0.5 rounded-sm ${getSourceColor(item.source)}`}
+          >
+            {item.source}
+          </span>
+          {item.pubDate && (
+            <span className="text-xs text-news-gray ml-auto">
+              {item.pubDate}
+            </span>
+          )}
+        </div>
+        {/* Clickable title */}
+        <button
+          type="button"
+          className="text-sm font-semibold text-news-charcoal leading-snug line-clamp-2 hover:text-news-red transition-colors text-left cursor-pointer"
+          onClick={() => onSelect(item)}
+          data-ocid="category.open_modal_button"
+        >
+          {item.title}
+        </button>
+        {item.description && (
+          <p className="text-xs text-news-gray line-clamp-2 leading-relaxed">
+            {item.description}
+          </p>
+        )}
+        <a
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-news-red font-medium hover:underline self-start mt-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          মূল সংবাদ পড়ুন
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ─── News Detail Modal ────────────────────────────────────────────────────────
+function NewsDetailModal({
+  item,
+  onClose,
+}: {
+  item: RSSItem | null;
+  onClose: () => void;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const isOpen = item !== null;
+  const imgSrc = item ? getCategoryImage(item.category, item.id) : "";
+
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent
+        className="max-w-2xl w-full p-0 overflow-hidden"
+        data-ocid="category.dialog"
+      >
+        {item && (
+          <>
+            <DialogHeader className="px-6 pt-5 pb-0">
+              <div className="flex items-center gap-2 flex-wrap mb-3">
+                <span
+                  className={`text-xs font-bold px-2.5 py-1 rounded-sm ${getSourceColor(item.source)}`}
+                >
+                  {item.source}
+                </span>
+                {item.category && (
+                  <Badge variant="outline" className="text-xs">
+                    {item.category}
+                  </Badge>
+                )}
+                {item.pubDate && (
+                  <span className="text-xs text-news-gray ml-auto">
+                    {item.pubDate}
+                  </span>
+                )}
+              </div>
+              <DialogTitle className="text-lg font-bold text-news-charcoal leading-snug text-left">
+                {item.title}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="px-6 pb-6 pt-4 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+              {/* Image */}
+              <div className="w-full aspect-video rounded-sm overflow-hidden bg-muted">
+                {!imgError ? (
+                  <img
+                    src={imgSrc}
+                    alt={item.category}
+                    className="w-full h-full object-cover"
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <span className="text-5xl">📰</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {item.description ? (
+                <div className="bg-muted/40 rounded-sm p-4 border-l-4 border-news-red">
+                  <p className="text-sm font-medium text-news-charcoal mb-1">
+                    সংক্ষিপ্ত বিবরণ
+                  </p>
+                  <p className="text-sm text-news-charcoal leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-muted/40 rounded-sm p-4 border-l-4 border-news-red">
+                  <p className="text-sm text-news-gray italic">
+                    বিস্তারিত বিবরণ পাওয়া যায়নি। মূল সংবাদ পড়তে নিচের লিংকে ক্লিক করুন।
+                  </p>
+                </div>
+              )}
+
+              {/* Source + reference */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-news-gray">সূত্র:</span>
+                  <span className="text-xs font-semibold text-news-charcoal">
+                    {item.source}
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-xs text-news-gray shrink-0">
+                    রেফারেন্স লিংক:
+                  </span>
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline break-all"
+                  >
+                    {item.link}
+                  </a>
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1"
+                  >
+                    <Button
+                      size="sm"
+                      className="w-full bg-news-red hover:bg-news-red/90 text-white gap-1.5"
+                    >
+                      মূল সংবাদ পড়ুন
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Button>
+                  </a>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onClose}
+                    className="gap-1.5"
+                    data-ocid="category.close_button"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    বন্ধ করুন
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -87,6 +359,7 @@ export default function CategoryPage() {
     useArticlesByCategory(category);
   const { data: rssItems = [], isLoading: rssLoading } =
     useRSSItemsByCategory(category);
+  const [selectedItem, setSelectedItem] = useState<RSSItem | null>(null);
 
   const config = CATEGORY_CONFIG[category] ?? DEFAULT_CONFIG;
   const CategoryIcon = config.icon;
@@ -109,7 +382,7 @@ export default function CategoryPage() {
         <span className="text-news-charcoal font-medium">{category}</span>
       </nav>
 
-      {/* Section header with category color */}
+      {/* Section header */}
       <div
         className={`flex items-center gap-4 mb-8 p-5 rounded-lg ${config.lightBg} border-l-4 ${config.color.replace("bg-", "border-")}`}
       >
@@ -124,13 +397,13 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      {/* Manual articles */}
+      {/* Manual articles from backend */}
       {articlesLoading && (
         <div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
           data-ocid="category.loading_state"
         >
-          {["c1", "c2", "c3", "c4", "c5", "c6"].map((k) => (
+          {["c1", "c2", "c3"].map((k) => (
             <div
               key={k}
               className="bg-card rounded-sm overflow-hidden shadow-card border border-border"
@@ -219,7 +492,7 @@ export default function CategoryPage() {
         </div>
       )}
 
-      {/* RSS items for this category */}
+      {/* RSS feed items for this category */}
       {(rssLoading || rssItems.length > 0) && (
         <div data-ocid="category.section">
           <div className="flex items-center gap-3 mb-5">
@@ -238,87 +511,38 @@ export default function CategoryPage() {
                 >
                   <Skeleton className="w-full aspect-video" />
                   <div className="p-4 space-y-2">
-                    <div className="flex gap-2">
-                      <Skeleton className="h-5 w-24" />
-                    </div>
+                    <Skeleton className="h-5 w-24" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-20" />
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {!rssLoading && (
+          {!rssLoading && rssItems.length > 0 && (
             <div
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
               data-ocid="category.list"
             >
               {rssItems.map((item, i) => (
-                <div
-                  key={Number(item.id)}
-                  className="flex flex-col bg-card border border-border rounded-sm hover:border-blue-300 hover:shadow-md transition-all overflow-hidden"
-                  data-ocid={`category.item.${i + 1}`}
-                >
-                  {/* News image */}
-                  <div className="aspect-video overflow-hidden bg-muted">
-                    <img
-                      src={getCategoryImage(item.category, item.id)}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "https://placehold.co/400x225/e2e8f0/64748b?text=সংবাদ";
-                      }}
-                    />
-                  </div>
-                  {/* Content */}
-                  <div className="flex flex-col gap-2 p-4">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-xs font-bold px-2 py-0.5 rounded-sm ${getSourceColor(item.source)}`}
-                      >
-                        {item.source}
-                      </span>
-                      {item.pubDate && (
-                        <span className="text-xs text-news-gray ml-auto">
-                          {item.pubDate}
-                        </span>
-                      )}
-                    </div>
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-semibold text-news-charcoal leading-snug line-clamp-2 hover:text-news-red transition-colors"
-                      data-ocid={`category.link.${i + 1}`}
-                    >
-                      {item.title}
-                    </a>
-                    {item.description && (
-                      <p className="text-xs text-news-gray line-clamp-2 leading-relaxed">
-                        {item.description}
-                      </p>
-                    )}
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium hover:underline self-start mt-1"
-                      data-ocid={`category.link.${i + 1}`}
-                    >
-                      মূল সংবাদ পড়ুন
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
+                <div key={Number(item.id)} data-ocid={`category.item.${i + 1}`}>
+                  <RSSCard
+                    item={item}
+                    onSelect={(selected) => setSelectedItem(selected)}
+                  />
                 </div>
               ))}
             </div>
           )}
         </div>
       )}
+
+      {/* Detail modal — always rendered, controlled by selectedItem state */}
+      <NewsDetailModal
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+      />
     </div>
   );
 }
