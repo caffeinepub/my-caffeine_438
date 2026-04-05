@@ -32,6 +32,13 @@ actor {
     AccessControl.isAdmin(accessControlState, caller);
   };
 
+  // If no admin exists yet, first authenticated caller claims admin role.
+  // Otherwise, registers caller as regular user (if not yet registered).
+  public shared ({ caller }) func claimAdminIfNoneExists() : async Bool {
+    AccessControl.claimAdminIfNoneExists(accessControlState, caller);
+    AccessControl.isAdmin(accessControlState, caller);
+  };
+
   // ---- HTTP Transform (required for http outcalls) ----
   public query func transform(input : Outcall.TransformationInput) : async Outcall.TransformationOutput {
     Outcall.transform(input);
