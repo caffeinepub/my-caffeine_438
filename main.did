@@ -1,0 +1,44 @@
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type Article = 
+ record {
+   author: text;
+   category: text;
+   content: text;
+   date: text;
+   excerpt: text;
+   id: nat;
+   imageUrl: text;
+   isBreaking: bool;
+   isPublished: bool;
+   isSlider: bool;
+   title: text;
+ };
+service : {
+  _initializeAccessControlWithSecret: (userSecret: text) -> ();
+  addArticle: (title: text, content: text, category: text, imageUrl: 
+   text, author: text, excerpt: text, date: text, isBreaking: bool, isSlider:
+   bool, isPublished: bool) -> (nat);
+  addCategory: (category: text) -> ();
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  deleteArticle: (id: nat) -> (bool);
+  getAllArticles: () -> (vec Article) query;
+  getArticleById: (id: nat) -> (opt Article) query;
+  getArticlesByCategory: (category: text) -> (vec Article) query;
+  getBreakingArticles: () -> (vec Article) query;
+  getBreakingNewsText: () -> (text) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getCategories: () -> (vec text) query;
+  getPublishedArticles: () -> (vec Article) query;
+  getSliderArticles: () -> (vec Article) query;
+  isCallerAdmin: () -> (bool) query;
+  removeCategory: (category: text) -> ();
+  setBreakingNewsText: ("text": text) -> ();
+  updateArticle: (id: nat, title: text, content: text, category: text,
+   imageUrl: text, author: text, excerpt: text, date: text, isBreaking: 
+   bool, isSlider: bool, isPublished: bool) -> (bool);
+}
