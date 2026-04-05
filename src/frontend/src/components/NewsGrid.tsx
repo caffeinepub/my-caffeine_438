@@ -2,6 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, User } from "lucide-react";
 import type { Article } from "../backend.d";
 import { usePublishedArticles } from "../hooks/useQueries";
+import { Link } from "../router";
 
 const FALLBACK_ARTICLES: Article[] = [
   {
@@ -116,10 +117,14 @@ function NewsCard({ article, index }: { article: Article; index: number }) {
           {article.category}
         </span>
 
-        {/* Headline */}
-        <h3 className="text-base font-bold text-news-charcoal leading-snug mb-2 line-clamp-2 hover:text-news-red transition-colors cursor-pointer">
+        {/* Headline — clickable link to detail page */}
+        <Link
+          to={`/news/${Number(article.id)}`}
+          className="text-base font-bold text-news-charcoal leading-snug mb-2 line-clamp-2 hover:text-news-red transition-colors"
+          data-ocid={`news.link.${index + 1}`}
+        >
           {article.title}
-        </h3>
+        </Link>
 
         {/* Excerpt */}
         <p className="text-sm text-news-gray leading-relaxed line-clamp-2 flex-1 mb-3">

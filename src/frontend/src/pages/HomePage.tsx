@@ -1,5 +1,6 @@
 import HeroSlider from "../components/HeroSlider";
 import NewsGrid from "../components/NewsGrid";
+import RSSFeedSection from "../components/RSSFeedSection";
 
 export default function HomePage() {
   return (
@@ -15,6 +16,11 @@ export default function HomePage() {
         </div>
         <NewsGrid />
       </section>
+
+      {/* RSS Feed section — auto-fetched from online sources */}
+      <div className="border-t border-border">
+        <RSSFeedSection />
+      </div>
     </div>
   );
 }

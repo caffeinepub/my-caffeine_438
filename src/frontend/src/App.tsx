@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import AdminPage from "./pages/AdminPage";
 import CategoryPage from "./pages/CategoryPage";
 import HomePage from "./pages/HomePage";
+import NewsDetailPage from "./pages/NewsDetailPage";
 import { Route, RouterProvider } from "./router";
 
 function AppLayout() {
@@ -16,6 +17,7 @@ function AppLayout() {
         <Route path="/" component={HomePage} />
         <Route path="/admin" component={AdminPage} />
         <Route path="/category/:name" component={CategoryPage} />
+        <Route path="/news/:id" component={NewsDetailPage} />
       </main>
       <Footer />
       <Toaster />

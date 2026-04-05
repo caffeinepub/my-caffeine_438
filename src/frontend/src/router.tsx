@@ -41,6 +41,8 @@ function matchPath(
   return params;
 }
 
+const PATTERNS = ["/", "/admin", "/category/:name", "/news/:id"];
+
 export function RouterProvider({ children }: { children: ReactNode }) {
   const [pathname, setPathname] = useState(() => window.location.pathname);
 
@@ -55,9 +57,8 @@ export function RouterProvider({ children }: { children: ReactNode }) {
     setPathname(to);
   }, []);
 
-  const patterns = ["/", "/admin", "/category/:name"];
   let params: Record<string, string> = {};
-  for (const pattern of patterns) {
+  for (const pattern of PATTERNS) {
     const match = matchPath(pattern, pathname);
     if (match !== null) {
       params = match;
@@ -115,11 +116,6 @@ export function Link({
 }
 
 export function Outlet() {
-  const { pathname } = useRouter();
-
-  if (pathname === "/") return null;
-  if (pathname === "/admin") return null;
-  if (pathname.startsWith("/category/")) return null;
   return null;
 }
 
@@ -131,8 +127,7 @@ export function Route({
   component: React.ComponentType;
 }) {
   const { pathname } = useRouter();
-  const patterns = [path];
-  for (const p of patterns) {
+  for (const p of [path]) {
     if (matchPath(p, pathname) !== null) {
       return <Component />;
     }

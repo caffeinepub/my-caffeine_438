@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -34,28 +35,39 @@ import {
   LogOut,
   Pencil,
   Plus,
+  RefreshCw,
+  Rss,
   Save,
+  Settings,
   ShieldAlert,
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Article } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
+  type SiteSettings,
   useAddArticle,
   useAddCategory,
   useAllArticles,
   useBreakingNewsText,
   useCategories,
   useDeleteArticle,
+  useFeedSources,
   useIsAdmin,
+  useLastFetchTime,
   useLogoUrl,
+  useRSSItems,
+  useRefreshFeeds,
   useRemoveCategory,
   useSetBreakingNewsText,
   useSetLogoUrl,
+  useSiteSettings,
+  useToggleFeedSource,
   useUpdateArticle,
+  useUpdateSiteSettings,
 } from "../hooks/useQueries";
 
 type ArticleFormData = {
@@ -836,6 +848,346 @@ function BreakingNewsTab() {
   );
 }
 
+// ─── RSS Feed Tab ─────────────────────────────────────────────────────────────
+
+function formatNanoTime(nanos: number): string {
+  if (!nanos) return "কখনো করা হয়নি";
+  const ms = nanos / 1_000_000;
+  const date = new Date(ms);
+  const bengaliNums: Record<string, string> = {
+    "0": "০",
+    "1": "১",
+    "2": "২",
+    "3": "৩",
+    "4": "৪",
+    "5": "৫",
+    "6": "৬",
+    "7": "৭",
+    "8": "৮",
+    "9": "৯",
+  };
+  const toBn = (n: number) =>
+    n
+      .toString()
+      .split("")
+      .map((d) => bengaliNums[d] ?? d)
+      .join("");
+  const months = [
+    "জানুয়ারি",
+    "ফেব্রুয়ারি",
+    "মার্চ",
+    "এপ্রিল",
+    "মে",
+    "জুন",
+    "জুলাই",
+    "আগস্ট",
+    "সেপ্টেম্বর",
+    "অক্টোবর",
+    "নভেম্বর",
+    "ডিসেম্বর",
+  ];
+  return `${toBn(date.getDate())} ${months[date.getMonth()]} ${toBn(date.getFullYear())}, ${toBn(date.getHours())}:${date.getMinutes().toString().padStart(2, "0")}`;
+}
+
+function RSSTab() {
+  const { data: sources = [], isLoading: sourcesLoading } = useFeedSources();
+  const { data: rssItems = [], isLoading: itemsLoading } = useRSSItems();
+  const { data: lastFetch = 0 } = useLastFetchTime();
+  const refreshFeeds = useRefreshFeeds();
+  const toggleFeed = useToggleFeedSource();
+
+  const handleRefresh = async () => {
+    try {
+      const count = await refreshFeeds.mutateAsync();
+      toast.success(`${count} টি সংবাদ সংগ্রহ করা হয়েছে`);
+    } catch {
+      toast.error("নিউজ ফিড রিফ্রেশ করা যায়নি");
+    }
+  };
+
+  const handleToggle = async (url: string, enabled: boolean) => {
+    try {
+      await toggleFeed.mutateAsync({ url, enabled });
+      toast.success(enabled ? "ফিড সক্রিয় করা হয়েছে" : "ফিড নিষ্ক্রিয় করা হয়েছে");
+    } catch {
+      toast.error("পরিবর্তন করা যায়নি");
+    }
+  };
+
+  return (
+    <div data-ocid="admin.panel">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Rss className="w-5 h-5 text-news-red" />
+            নিউজ ফিড ব্যবস্থাপনা
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            সর্বশেষ আপডেট:{" "}
+            <span className="font-medium text-foreground">
+              {formatNanoTime(lastFetch)}
+            </span>
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {itemsLoading ? "..." : `${rssItems.length} টি সংবাদ লোড হয়েছে`}
+          </span>
+          <Button
+            onClick={handleRefresh}
+            disabled={refreshFeeds.isPending}
+            className="bg-news-red hover:bg-news-red-dark text-white"
+            data-ocid="admin.primary_button"
+          >
+            {refreshFeeds.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 mr-2" />
+            )}
+            নিউজ ফিড রিফ্রেশ করুন
+          </Button>
+        </div>
+      </div>
+
+      {refreshFeeds.isPending && (
+        <div
+          className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded mb-6 text-sm text-blue-700"
+          data-ocid="admin.loading_state"
+        >
+          <Loader2 className="w-4 h-4 animate-spin" />
+          বিবিসি বাংলা, প্রথম আলো, ইত্তেফাক ও অন্যান্য উৎস থেকে সংবাদ সংগ্রহ হচ্ছে...
+        </div>
+      )}
+
+      {/* Feed sources */}
+      <div className="mb-8">
+        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
+          সংবাদ উৎসমূহ
+        </h3>
+        {sourcesLoading ? (
+          <div className="space-y-2" data-ocid="admin.loading_state">
+            {[1, 2, 3, 4, 5, 6].map((k) => (
+              <Skeleton key={k} className="h-14 w-full" />
+            ))}
+          </div>
+        ) : sources.length === 0 ? (
+          <div
+            className="text-center py-8 text-muted-foreground border border-dashed rounded"
+            data-ocid="admin.empty_state"
+          >
+            <p className="text-sm">কোনো ফিড উৎস কনফিগার করা নেই।</p>
+            <p className="text-xs mt-1">ব্যাকএন্ডে ডিফল্ট ফিড উৎস যোগ করুন।</p>
+          </div>
+        ) : (
+          <div className="border rounded overflow-auto" data-ocid="admin.table">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>সংবাদ মাধ্যম</TableHead>
+                  <TableHead>ক্যাটাগরি</TableHead>
+                  <TableHead>RSS URL</TableHead>
+                  <TableHead className="text-center">সক্রিয়</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sources.map((source, i) => (
+                  <TableRow key={source.url} data-ocid={`admin.row.${i + 1}`}>
+                    <TableCell className="font-medium">{source.name}</TableCell>
+                    <TableCell>
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                        {source.category}
+                      </span>
+                    </TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <span className="text-xs text-muted-foreground truncate block">
+                        {source.url}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Switch
+                        checked={source.enabled}
+                        onCheckedChange={(checked) =>
+                          handleToggle(source.url, checked)
+                        }
+                        disabled={toggleFeed.isPending}
+                        data-ocid={`admin.switch.${i + 1}`}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+
+      {/* RSS items preview */}
+      {!itemsLoading && rssItems.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
+            সংগৃহীত সংবাদ (সর্বশেষ {Math.min(rssItems.length, 5)} টি)
+          </h3>
+          <div className="space-y-2" data-ocid="admin.list">
+            {rssItems.slice(0, 5).map((item, i) => (
+              <div
+                key={Number(item.id)}
+                className="flex items-start gap-3 p-3 border border-border rounded text-sm"
+                data-ocid={`admin.item.${i + 1}`}
+              >
+                <span className="text-xs font-bold bg-news-red/10 text-news-red px-2 py-0.5 rounded-sm shrink-0 mt-0.5">
+                  {item.source}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-medium text-news-charcoal line-clamp-1">
+                    {item.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {item.category} • {item.pubDate}
+                  </p>
+                </div>
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-500 hover:underline shrink-0"
+                  data-ocid={`admin.link.${i + 1}`}
+                >
+                  দেখুন
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
+
+function SettingsTab() {
+  const { data: settings, isLoading } = useSiteSettings();
+  const updateSettings = useUpdateSiteSettings();
+  const [form, setForm] = useState<SiteSettings>({
+    siteName: "",
+    tagline: "",
+    contactEmail: "",
+    footerText: "",
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setForm(settings);
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    try {
+      await updateSettings.mutateAsync(form);
+      toast.success("সেটিংস সংরক্ষণ করা হয়েছে");
+    } catch {
+      toast.error("সেটিংস সংরক্ষণ করা যায়নি");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl space-y-4" data-ocid="admin.loading_state">
+        {[1, 2, 3, 4].map((k) => (
+          <div key={k} className="space-y-1">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl" data-ocid="admin.panel">
+      <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
+        <Settings className="w-5 h-5" />
+        সাইট সেটিংস
+      </h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        পোর্টালের মূল তথ্য এবং যোগাযোগের বিবরণ আপডেট করুন।
+      </p>
+
+      <div className="space-y-5">
+        <div className="space-y-1.5">
+          <Label htmlFor="siteName">সাইটের নাম</Label>
+          <Input
+            id="siteName"
+            value={form.siteName}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, siteName: e.target.value }))
+            }
+            placeholder="বালিগাঁও নিউজ"
+            data-ocid="admin.input"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="tagline">ট্যাগলাইন</Label>
+          <Input
+            id="tagline"
+            value={form.tagline}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, tagline: e.target.value }))
+            }
+            placeholder="বালিগাঁওয়ের বিশ্বস্ত সংবাদ"
+            data-ocid="admin.input"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="contactEmail">যোগাযোগ ইমেইল</Label>
+          <Input
+            id="contactEmail"
+            type="email"
+            value={form.contactEmail}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, contactEmail: e.target.value }))
+            }
+            placeholder="baligawnews.bd@gmail.com"
+            data-ocid="admin.input"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="footerText">ফুটার টেক্সট</Label>
+          <Textarea
+            id="footerText"
+            value={form.footerText}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, footerText: e.target.value }))
+            }
+            placeholder="© বালিগাঁও নিউজ। সর্বস্বত্ব সংরক্ষিত।"
+            rows={3}
+            data-ocid="admin.textarea"
+          />
+        </div>
+
+        <Button
+          onClick={handleSave}
+          disabled={updateSettings.isPending}
+          className="bg-news-red hover:bg-news-red-dark text-white"
+          data-ocid="admin.save_button"
+        >
+          {updateSettings.isPending ? (
+            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-1" />
+          )}
+          সেটিংস সংরক্ষণ করুন
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main AdminPage ───────────────────────────────────────────────────────────
+
 export default function AdminPage() {
   const { identity, login, clear, isLoggingIn, isInitializing } =
     useInternetIdentity();
@@ -924,7 +1276,7 @@ export default function AdminPage() {
             অ্যাডমিন প্যানেল
           </h1>
           <p className="text-sm text-muted-foreground">
-            দেশের খবর কন্টেন্ট ম্যানেজমেন্ট সিস্টেম
+            বালিগাঁও নিউজ কন্টেন্ট ম্যানেজমেন্ট সিস্টেম
           </p>
         </div>
         <Button
@@ -939,7 +1291,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="articles">
-        <TabsList className="mb-6" data-ocid="admin.tab">
+        <TabsList className="mb-6 flex-wrap h-auto" data-ocid="admin.tab">
           <TabsTrigger value="articles" data-ocid="admin.tab">
             নিউজ ব্যবস্থাপনা
           </TabsTrigger>
@@ -951,6 +1303,14 @@ export default function AdminPage() {
           </TabsTrigger>
           <TabsTrigger value="logo" data-ocid="admin.tab">
             লোগো
+          </TabsTrigger>
+          <TabsTrigger value="rss" data-ocid="admin.tab">
+            <Rss className="w-3.5 h-3.5 mr-1" />
+            নিউজ ফিড
+          </TabsTrigger>
+          <TabsTrigger value="settings" data-ocid="admin.tab">
+            <Settings className="w-3.5 h-3.5 mr-1" />
+            সেটিংস
           </TabsTrigger>
         </TabsList>
 
@@ -965,6 +1325,12 @@ export default function AdminPage() {
         </TabsContent>
         <TabsContent value="logo">
           <LogoTab />
+        </TabsContent>
+        <TabsContent value="rss">
+          <RSSTab />
+        </TabsContent>
+        <TabsContent value="settings">
+          <SettingsTab />
         </TabsContent>
       </Tabs>
     </div>
