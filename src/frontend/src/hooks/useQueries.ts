@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Article } from "../backend.d";
+import { createActorWithConfig } from "../config";
 import { useActor } from "./useActor";
 import { useInternetIdentity } from "./useInternetIdentity";
 
@@ -453,15 +454,15 @@ export function useClaimAdmin() {
 // Session token is stored in localStorage key: "adminSessionToken"
 
 export function useAdminLogin() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
       email,
       password,
     }: { email: string; password: string }) => {
-      if (!actor) throw new Error("Actor not available");
-      const result = await (actor as any).adminLoginWithPassword(
+      // Create a fresh anonymous actor to avoid any actor state issues
+      const freshActor = await createActorWithConfig();
+      const result = await (freshActor as any).adminLoginWithPassword(
         email,
         password,
       );
