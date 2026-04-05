@@ -35,7 +35,16 @@ actor {
   // If no admin exists yet, first authenticated caller claims admin role.
   // Otherwise, registers caller as regular user (if not yet registered).
   public shared ({ caller }) func claimAdminIfNoneExists() : async Bool {
-    AccessControl.claimAdminIfNoneExists(accessControlState, caller);
+    if (caller.isAnonymous()) { return false };
+    if (not accessControlState.adminAssigned) {
+      accessControlState.userRoles.add(caller, #admin);
+      accessControlState.adminAssigned := true;
+    } else {
+      switch (accessControlState.userRoles.get(caller)) {
+        case (null) { accessControlState.userRoles.add(caller, #user) };
+        case (?_) {};
+      };
+    };
     AccessControl.isAdmin(accessControlState, caller);
   };
 
@@ -580,6 +589,62 @@ actor {
       Runtime.trap("Unauthorized: Only admins can update logo");
     };
     logoUrl := url;
+  };
+
+
+  // ---- Email+Password Admin Authentication ----
+  // Default: email=baligawnews.bd@gmail.com, password=Baligaw@2024
+  var adminEmail : Text = "baligawnews.bd@gmail.com";
+  var adminPasswordHash : Text = "Baligaw@2024";
+
+  // Session tokens map: token -> expiry time (nanoseconds)
+  let adminSessions = Map.empty<Text, Int>();
+
+  func makeToken(seed : Text) : Text {
+    "sess_" # Time.now().toText() # "_" # seed;
+  };
+
+  // Admin login with email + password, returns session token
+  public shared func adminLoginWithPassword(email : Text, password : Text) : async { #ok : Text; #err : Text } {
+    if (email == adminEmail and password == adminPasswordHash) {
+      let token = makeToken(email);
+      let expiry = Time.now() + 86_400_000_000_000;
+      adminSessions.add(token, expiry);
+      #ok(token);
+    } else {
+      #err("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
+    };
+  };
+
+  // Validate session token
+  public query func isAdminSessionValid(token : Text) : async Bool {
+    switch (adminSessions.get(token)) {
+      case (null) { false };
+      case (?expiry) { Time.now() < expiry };
+    };
+  };
+
+  // Logout (invalidate session)
+  public shared func adminSessionLogout(token : Text) : async () {
+    adminSessions.remove(token);
+  };
+
+  // Change admin password (requires valid session token)
+  public shared func changeAdminPassword(token : Text, oldPassword : Text, newPassword : Text) : async { #ok; #err : Text } {
+    switch (adminSessions.get(token)) {
+      case (null) { #err("অবৈধ সেশন") };
+      case (?expiry) {
+        if (Time.now() >= expiry) { return #err("সেশনের মেয়াদ শেষ") };
+        if (oldPassword != adminPasswordHash) { return #err("পুরনো পাসওয়ার্ড সঠিক নয়") };
+        adminPasswordHash := newPassword;
+        #ok;
+      };
+    };
+  };
+
+  // Get admin email
+  public query func getAdminEmail() : async Text {
+    adminEmail;
   };
 
   // ---- Migration: copy v1 siteSettings to v2 on upgrade ----

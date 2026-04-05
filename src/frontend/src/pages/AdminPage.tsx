@@ -31,7 +31,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Eye,
+  EyeOff,
   ImageIcon,
+  KeyRound,
   Loader2,
   LogIn,
   LogOut,
@@ -41,7 +44,6 @@ import {
   Rss,
   Save,
   Settings,
-  ShieldAlert,
   Trash2,
   UserPlus,
   X,
@@ -49,18 +51,20 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Article } from "../backend.d";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   type Reporter,
   type SiteSettings,
   useAddArticle,
   useAddCategory,
+  useAdminLogin,
+  useAdminSessionLogout,
+  useAdminSessionValid,
   useAllArticles,
   useBreakingNewsText,
   useCategories,
+  useChangeAdminPassword,
   useDeleteArticle,
   useFeedSources,
-  useIsAdmin,
   useLastFetchTime,
   useLogoUrl,
   useRSSItems,
@@ -1459,6 +1463,9 @@ function SettingsTab() {
           </div>
         </div>
 
+        {/* ── Section 6: পাসওয়ার্ড পরিবর্তন ── */}
+        <PasswordChangeSection />
+
         {/* ── Save Button ── */}
         <div className="flex justify-end pt-2">
           <Button
@@ -1480,16 +1487,170 @@ function SettingsTab() {
   );
 }
 
+// ─── Password Change Section ─────────────────────────────────────────────────
+
+function PasswordChangeSection() {
+  const changePassword = useChangeAdminPassword();
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+
+  const handleChange = async () => {
+    if (newPw !== confirmPw) {
+      toast.error("নতুন পাসওয়ার্ড দুটি মিলছে না");
+      return;
+    }
+    if (newPw.length < 6) {
+      toast.error("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে");
+      return;
+    }
+    try {
+      await changePassword.mutateAsync({
+        oldPassword: oldPw,
+        newPassword: newPw,
+      });
+      toast.success("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে");
+      setOldPw("");
+      setNewPw("");
+      setConfirmPw("");
+    } catch (e: any) {
+      toast.error(e.message || "পাসওয়ার্ড পরিবর্তন করা যায়নি");
+    }
+  };
+
+  return (
+    <div className="border rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-muted/40 px-4 py-3 border-b flex items-center gap-2">
+        <Badge
+          variant="outline"
+          className="text-xs font-semibold text-news-red border-news-red/40 bg-news-red/5"
+        >
+          ০৬
+        </Badge>
+        <h3 className="font-semibold text-sm flex items-center gap-2">
+          <KeyRound className="w-4 h-4" /> অ্যাডমিন পাসওয়ার্ড পরিবর্তন
+        </h3>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="space-y-1.5">
+          <Label>পুরনো পাসওয়ার্ড</Label>
+          <div className="relative">
+            <Input
+              type={showOld ? "text" : "password"}
+              value={oldPw}
+              onChange={(e) => setOldPw(e.target.value)}
+              placeholder="বর্তমান পাসওয়ার্ড দিন"
+              data-ocid="settings.old_password.input"
+            />
+            <button
+              type="button"
+              onClick={() => setShowOld(!showOld)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showOld ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label>নতুন পাসওয়ার্ড</Label>
+          <div className="relative">
+            <Input
+              type={showNew ? "text" : "password"}
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              placeholder="নতুন পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)"
+              data-ocid="settings.new_password.input"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNew(!showNew)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showNew ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label>নতুন পাসওয়ার্ড নিশ্চিত করুন</Label>
+          <Input
+            type="password"
+            value={confirmPw}
+            onChange={(e) => setConfirmPw(e.target.value)}
+            placeholder="পাসওয়ার্ড আবার দিন"
+            data-ocid="settings.confirm_password.input"
+          />
+        </div>
+        <Button
+          onClick={handleChange}
+          disabled={changePassword.isPending || !oldPw || !newPw || !confirmPw}
+          className="bg-news-red hover:bg-news-red-dark text-white"
+          data-ocid="settings.change_password.submit_button"
+        >
+          {changePassword.isPending ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          পাসওয়ার্ড পরিবর্তন করুন
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main AdminPage ───────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-  const { identity, login, clear, isLoggingIn, isInitializing } =
-    useInternetIdentity();
-  const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
+  const adminLogin = useAdminLogin();
+  const adminLogout = useAdminSessionLogout();
+  const { data: isSessionValid, isLoading: isSessionLoading } =
+    useAdminSessionValid();
 
-  const isLoggedIn = !!identity;
+  const [email, setEmail] = useState("baligawnews.bd@gmail.com");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  if (isInitializing || isAdminLoading) {
+  // Check if there is a token in localStorage at all
+  const hasToken =
+    typeof window !== "undefined"
+      ? !!localStorage.getItem("adminSessionToken")
+      : false;
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      toast.error("ইমেইল ও পাসওয়ার্ড দিন");
+      return;
+    }
+    try {
+      await adminLogin.mutateAsync({ email, password });
+      toast.success("লগইন সফল হয়েছে");
+    } catch (e: any) {
+      toast.error(e.message || "লগইন ব্যর্থ হয়েছে। পাসওয়ার্ড চেক করুন।");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await adminLogout.mutateAsync();
+      toast.success("লগআউট হয়েছে");
+    } catch {
+      // still clear local storage
+      localStorage.removeItem("adminSessionToken");
+    }
+  };
+
+  // Show loading while checking session validity (only if we have a token)
+  if (hasToken && isSessionLoading) {
     return (
       <div
         className="flex items-center justify-center min-h-[60vh]"
@@ -1497,70 +1658,106 @@ export default function AdminPage() {
       >
         <div className="text-center">
           <Loader2 className="w-10 h-10 animate-spin text-news-red mx-auto mb-3" />
-          <p className="text-muted-foreground">লোড হচ্ছে...</p>
+          <p className="text-muted-foreground">সেশন যাচাই করা হচ্ছে...</p>
         </div>
       </div>
     );
   }
 
-  if (!isLoggedIn) {
+  // Show login form if no valid session
+  if (!hasToken || !isSessionValid) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] px-4">
-        <div className="text-center max-w-sm w-full" data-ocid="admin.card">
-          <div className="bg-news-red/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <LogIn className="w-10 h-10 text-news-red" />
+      <div className="flex items-center justify-center min-h-[60vh] px-4 py-12">
+        <div className="w-full max-w-md" data-ocid="admin.card">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="bg-news-red/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LogIn className="w-10 h-10 text-news-red" />
+            </div>
+            <h1 className="text-2xl font-bold text-news-charcoal">
+              অ্যাডমিন প্যানেল লগইন
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              বালিগাঁও নিউজ — কন্টেন্ট ম্যানেজমেন্ট সিস্টেম
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-news-charcoal mb-2">
-            অ্যাডমিন প্যানেল
-          </h1>
-          <p className="text-muted-foreground mb-8">
-            এই পেজে প্রবেশ করতে লগইন করা আবশ্যক।
-          </p>
-          <Button
-            onClick={login}
-            disabled={isLoggingIn}
-            className="w-full bg-news-red hover:bg-news-red-dark text-white text-base py-5"
-            data-ocid="admin.primary_button"
-          >
-            {isLoggingIn ? (
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            ) : (
-              <LogIn className="w-5 h-5 mr-2" />
-            )}
-            লগইন করুন
-          </Button>
+
+          {/* Login Card */}
+          <div className="border rounded-2xl shadow-md bg-card p-6 space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="adminEmail">ইমেইল</Label>
+              <Input
+                id="adminEmail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="baligawnews.bd@gmail.com"
+                data-ocid="admin.input"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="adminPassword">পাসওয়ার্ড</Label>
+              <div className="relative">
+                <Input
+                  id="adminPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="পাসওয়ার্ড দিন"
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  data-ocid="admin.input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleLogin}
+              disabled={
+                adminLogin.isPending || !email.trim() || !password.trim()
+              }
+              className="w-full bg-news-red hover:bg-news-red-dark text-white text-base py-5"
+              data-ocid="admin.submit_button"
+            >
+              {adminLogin.isPending ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <LogIn className="w-5 h-5 mr-2" />
+              )}
+              লগইন করুন
+            </Button>
+
+            {/* Default password hint */}
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+              <p className="font-semibold mb-1">
+                ডিফল্ট পাসওয়ার্ড:{" "}
+                <code className="font-mono bg-amber-100 px-1 rounded">
+                  Baligaw@2024
+                </code>
+              </p>
+              <p className="text-xs text-amber-700">
+                প্রথমবার লগইনের জন্য উপরের ডিফল্ট পাসওয়ার্ড ব্যবহার করুন। লগইনের পরে
+                Settings &gt; পাসওয়ার্ড পরিবর্তন থেকে পাসওয়ার্ড বদলান।
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] px-4">
-        <div className="text-center max-w-sm w-full" data-ocid="admin.card">
-          <div className="bg-destructive/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShieldAlert className="w-10 h-10 text-destructive" />
-          </div>
-          <h1 className="text-2xl font-bold text-news-charcoal mb-2">
-            অ্যাক্সেস নেই
-          </h1>
-          <p className="text-muted-foreground mb-8">
-            আপনার অ্যাক্সেস নেই। শুধুমাত্র অ্যাডমিনরা এই প্যানেল ব্যবহার করতে পারবেন।
-          </p>
-          <Button
-            variant="outline"
-            onClick={clear}
-            className="w-full"
-            data-ocid="admin.secondary_button"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            লগআউট
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Authenticated admin panel
   return (
     <div className="max-w-7xl mx-auto px-4 py-8" data-ocid="admin.page">
       {/* Admin header */}
@@ -1575,10 +1772,15 @@ export default function AdminPage() {
         </div>
         <Button
           variant="outline"
-          onClick={clear}
+          onClick={handleLogout}
+          disabled={adminLogout.isPending}
           data-ocid="admin.secondary_button"
         >
-          <LogOut className="w-4 h-4 mr-2" />
+          {adminLogout.isPending ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <LogOut className="w-4 h-4 mr-2" />
+          )}
           লগআউট
         </Button>
       </div>

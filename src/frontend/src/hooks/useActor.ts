@@ -25,14 +25,11 @@ export function useActor() {
       };
 
       const actor = await createActorWithConfig(actorOptions);
-      // Register caller as admin (if no admin exists) or as regular user.
-      // This replaces the token-based approach so Internet Identity login
-      // always grants the first authenticated user admin rights.
-      await (actor as any).claimAdminIfNoneExists();
       return actor;
     },
     // Only refetch when identity changes
     staleTime: Number.POSITIVE_INFINITY,
+    // This will cause the actor to be recreated when the identity changes
     enabled: true,
   });
 

@@ -434,3 +434,103 @@ export function useUpdateSiteSettings() {
     },
   });
 }
+
+export function useClaimAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Actor not available");
+      return (actor as any).claimAdminIfNoneExists() as Promise<boolean>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    },
+  });
+}
+
+// ─── Email+Password Admin Auth hooks ─────────────────────────────────────────
+// Session token is stored in localStorage key: "adminSessionToken"
+
+export function useAdminLogin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      email,
+      password,
+    }: { email: string; password: string }) => {
+      if (!actor) throw new Error("Actor not available");
+      const result = await (actor as any).adminLoginWithPassword(
+        email,
+        password,
+      );
+      // Motoko variant: result has 'ok' key with token or 'err' key with message
+      if ("ok" in result) {
+        localStorage.setItem("adminSessionToken", result.ok);
+        return result.ok as string;
+      }
+      throw new Error(result.err as string);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminSessionValid"] });
+    },
+  });
+}
+
+export function useAdminSessionValid() {
+  const { actor, isFetching } = useActor();
+  const token =
+    typeof window !== "undefined"
+      ? (localStorage.getItem("adminSessionToken") ?? "")
+      : "";
+  return useQuery<boolean>({
+    queryKey: ["adminSessionValid", token],
+    queryFn: async () => {
+      if (!actor || !token) return false;
+      return (actor as any).isAdminSessionValid(token);
+    },
+    enabled: !!actor && !isFetching && !!token,
+    staleTime: 30_000,
+  });
+}
+
+export function useAdminSessionLogout() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem("adminSessionToken") ?? "";
+      if (actor && token) {
+        await (actor as any).adminSessionLogout(token);
+      }
+      localStorage.removeItem("adminSessionToken");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminSessionValid"] });
+    },
+  });
+}
+
+export function useChangeAdminPassword() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async ({
+      oldPassword,
+      newPassword,
+    }: {
+      oldPassword: string;
+      newPassword: string;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      const token = localStorage.getItem("adminSessionToken") ?? "";
+      if (!token) throw new Error("সেশন পাওয়া যায়নি");
+      const result = await (actor as any).changeAdminPassword(
+        token,
+        oldPassword,
+        newPassword,
+      );
+      if ("err" in result) throw new Error(result.err as string);
+    },
+  });
+}

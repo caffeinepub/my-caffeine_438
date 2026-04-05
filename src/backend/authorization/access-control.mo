@@ -37,23 +37,6 @@ module {
     };
   };
 
-  // If no admin has been assigned yet, the first authenticated caller becomes admin.
-  // If an admin already exists, the caller becomes a regular user (if not already registered).
-  public func claimAdminIfNoneExists(state : AccessControlState, caller : Principal) {
-    if (caller.isAnonymous()) { return };
-    switch (state.userRoles.get(caller)) {
-      case (?_) {}; // already registered, do nothing
-      case (null) {
-        if (not state.adminAssigned) {
-          state.userRoles.add(caller, #admin);
-          state.adminAssigned := true;
-        } else {
-          state.userRoles.add(caller, #user);
-        };
-      };
-    };
-  };
-
   public func getUserRole(state : AccessControlState, caller : Principal) : UserRole {
     if (caller.isAnonymous()) { return #guest };
     switch (state.userRoles.get(caller)) {
@@ -79,10 +62,6 @@ module {
   };
 
   public func isAdmin(state : AccessControlState, caller : Principal) : Bool {
-    if (caller.isAnonymous()) { return false };
-    switch (state.userRoles.get(caller)) {
-      case (?role) { role == #admin };
-      case (null) { false }; // unregistered user is not admin
-    };
+    getUserRole(state, caller) == #admin;
   };
 };
