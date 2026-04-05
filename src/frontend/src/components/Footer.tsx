@@ -1,5 +1,6 @@
 import { Newspaper } from "lucide-react";
-import { useSiteSettings } from "../hooks/useQueries";
+import { useState } from "react";
+import { useLogoUrl, useSiteSettings } from "../hooks/useQueries";
 import { Link } from "../router";
 
 const NAV_CATEGORIES = [
@@ -16,6 +17,11 @@ const NAV_CATEGORIES = [
 export default function Footer() {
   const year = new Date().getFullYear();
   const { data: settings } = useSiteSettings();
+  const {
+    data:
+      logoUrl = "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL",
+  } = useLogoUrl();
+  const [logoImgError, setLogoImgError] = useState(false);
 
   const siteName = settings?.siteName || "বালিগাঁও নিউজ";
   const tagline = settings?.tagline || "Voice of Truth and Freedom";
@@ -30,8 +36,25 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <div className="bg-news-red text-white w-10 h-10 flex items-center justify-center rounded">
-                <Newspaper className="w-5 h-5" />
+              <div
+                className="w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden rounded-lg"
+                style={{
+                  background: "rgba(255,255,255,0.95)",
+                  boxShadow: "0 0 0 2px rgba(255,255,255,0.2)",
+                }}
+              >
+                {logoUrl && !logoImgError ? (
+                  <img
+                    src={logoUrl}
+                    alt={siteName}
+                    className="w-full h-full object-contain p-1"
+                    onError={() => setLogoImgError(true)}
+                  />
+                ) : (
+                  <div className="bg-news-red text-white w-10 h-10 flex items-center justify-center rounded">
+                    <Newspaper className="w-5 h-5" />
+                  </div>
+                )}
               </div>
               <div>
                 <h3 className="text-lg font-bold">{siteName}</h3>
@@ -39,7 +62,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm text-white/60 leading-relaxed">
-              {siteName} বালিগাঁওয়ের একটি বিশ্বস্ত অনলাইন সংবাদ মাধ্যম। আমরা সত্য, নিরপেক্ষ
+              {siteName} বালিগাঁওয়ের একটি বিশ্বস্ত অনলাইন সংবাদ মাধ্যম। আমরা সত্য, নিরপেক্ষ
               ও সময়মতো সংবাদ পরিবেশনে প্রতিশ্রুতিবদ্ধ।
             </p>
           </div>

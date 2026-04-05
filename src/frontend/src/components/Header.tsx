@@ -74,16 +74,22 @@ export default function Header() {
             className="flex items-center gap-3"
             data-ocid="header.link"
           >
-            <div className="bg-news-red text-white w-12 h-12 flex items-center justify-center rounded font-bold text-lg flex-shrink-0 overflow-hidden">
+            <div
+              className="w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden rounded-lg"
+              style={{
+                background: "rgba(255,255,255,0.95)",
+                boxShadow: "0 0 0 2px rgba(0,0,0,0.07)",
+              }}
+            >
               {logoUrl && !logoImgError ? (
                 <img
                   src={logoUrl}
                   alt="বালিগাঁও নিউজ লোগো"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain p-1"
                   onError={() => setLogoImgError(true)}
                 />
               ) : (
-                <Newspaper className="w-6 h-6" />
+                <Newspaper className="w-10 h-10 text-news-red" />
               )}
             </div>
             <div>

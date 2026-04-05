@@ -1,16 +1,11 @@
-import {
-  Mail,
-  MapPin,
-  Newspaper,
-  Phone,
-  Shield,
-  Target,
-  Users,
-} from "lucide-react";
-import { useSiteSettings } from "../hooks/useQueries";
+import { Mail, MapPin, Phone, Shield, Target, Users } from "lucide-react";
+import { useState } from "react";
+import { useLogoUrl, useSiteSettings } from "../hooks/useQueries";
 
 export default function AboutPage() {
   const { data: settings } = useSiteSettings();
+  const { data: logoUrl } = useLogoUrl();
+  const [logoImgError, setLogoImgError] = useState(false);
 
   const siteName = settings?.siteName || "বালিগাঁও নিউজ";
   const tagline = settings?.tagline || "বালিগাঁওয়ের বিশ্বস্ত সংবাদ";
@@ -27,9 +22,22 @@ export default function AboutPage() {
       <div className="bg-news-charcoal text-white py-14">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="bg-news-red p-3 rounded-lg">
-              <Newspaper className="w-8 h-8 text-white" />
-            </div>
+            {logoUrl && !logoImgError ? (
+              <div
+                className="w-20 h-20 flex items-center justify-center flex-shrink-0 overflow-hidden rounded-lg"
+                style={{
+                  background: "rgba(255,255,255,0.95)",
+                  boxShadow: "0 0 0 2px rgba(255,255,255,0.2)",
+                }}
+              >
+                <img
+                  src={logoUrl}
+                  alt={siteName}
+                  className="w-full h-full object-contain p-1"
+                  onError={() => setLogoImgError(true)}
+                />
+              </div>
+            ) : null}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-3">{siteName}</h1>
           <p className="text-lg text-white/70">{tagline}</p>
