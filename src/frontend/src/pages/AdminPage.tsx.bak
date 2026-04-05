@@ -45,7 +45,6 @@ import {
   Save,
   Settings,
   Trash2,
-  Upload,
   UserPlus,
   X,
 } from "lucide-react";
@@ -695,19 +694,6 @@ function LogoTab() {
   const [url, setUrl] = useState("");
   const [initialized, setInitialized] = useState(false);
   const [previewError, setPreviewError] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setUrl(base64);
-      setPreviewError(false);
-    };
-  };
 
   useEffect(() => {
     if (!isLoading && !initialized) {
@@ -747,7 +733,7 @@ function LogoTab() {
     <div className="max-w-2xl" data-ocid="admin.panel">
       <h2 className="text-lg font-bold mb-1">লোগো ব্যবস্থাপনা</h2>
       <p className="text-sm text-muted-foreground mb-6">
-        সরাসরি ছবি আপলোড করুন অথবা লোগোর URL দিন।
+        পোর্টালের হেডারে প্রদর্শিত লোগোর URL দিন। লোগো না থাকলে ডিফল্ট আইকন দেখাবে।
       </p>
 
       {isLoading ? (
@@ -767,6 +753,7 @@ function LogoTab() {
                   alt="লোগো প্রিভিউ"
                   className="max-h-20 max-w-full object-contain"
                   referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                   onError={() => setPreviewError(true)}
                 />
               ) : (
@@ -791,37 +778,12 @@ function LogoTab() {
             )}
           </div>
 
-          {/* File upload section */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium block">
-              অথবা সরাসরি ফাইল আপলোড করুন
-            </Label>
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleFileChange}
-              data-ocid="admin.upload_button"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-muted-foreground/30 rounded-lg p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-news-red hover:text-news-red transition-colors cursor-pointer bg-muted/20 hover:bg-muted/40"
-              data-ocid="admin.dropzone"
-            >
-              <Upload className="w-8 h-8" />
-              <span className="text-sm font-medium">ক্লিক করে ছবি বেছে নিন</span>
-              <span className="text-xs">PNG, JPG, SVG সমর্থিত</span>
-            </button>
-          </div>
-
           {/* Logo URL input */}
           <div className="space-y-2">
-            <Label htmlFor="logoUrl">অথবা URL দিন</Label>
+            <Label htmlFor="logoUrl">লোগোর URL</Label>
             <Input
               id="logoUrl"
-              value={url.startsWith("data:") ? "" : url}
+              value={url}
               onChange={(e) => {
                 setUrl(e.target.value);
                 setPreviewError(false);
@@ -844,6 +806,7 @@ function LogoTab() {
                   alt="নতুন লোগো প্রিভিউ"
                   className="max-h-16 max-w-full object-contain"
                   referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display =
                       "none";
