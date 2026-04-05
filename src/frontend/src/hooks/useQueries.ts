@@ -404,10 +404,17 @@ export function useRefreshFeeds() {
       const count = await (actor as any).refreshAllFeeds();
       return Number(count);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rssItems"] });
-      queryClient.invalidateQueries({ queryKey: ["rssItemsByCategory"] });
-      queryClient.invalidateQueries({ queryKey: ["lastFetchTime"] });
+    onSuccess: async () => {
+      // Remove cached data so next fetch is fresh
+      queryClient.removeQueries({ queryKey: ["rssItems"] });
+      queryClient.removeQueries({ queryKey: ["rssItemsByCategory"] });
+      queryClient.removeQueries({ queryKey: ["lastFetchTime"] });
+      // Immediately refetch so UI updates right away
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["rssItems"] }),
+        queryClient.refetchQueries({ queryKey: ["rssItemsByCategory"] }),
+        queryClient.refetchQueries({ queryKey: ["lastFetchTime"] }),
+      ]);
     },
   });
 }

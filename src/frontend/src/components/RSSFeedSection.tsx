@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExternalLink, RefreshCw, Rss } from "lucide-react";
 import type { RSSItem } from "../hooks/useQueries";
@@ -24,6 +23,25 @@ function getSourceColor(source: string): string {
     return "bg-indigo-500 text-white";
   }
   return "bg-news-red text-white";
+}
+
+// Category-based placeholder images
+function getCategoryImage(category: string, id: bigint | number): string {
+  const seed = (Number(id) % 30) + 1;
+  const categoryImages: Record<string, string> = {
+    আন্তর্জাতিক: `https://picsum.photos/seed/intl${seed}/400/225`,
+    রাজনীতি: `https://picsum.photos/seed/pol${seed}/400/225`,
+    "স্থানীয় খবর": `https://picsum.photos/seed/local${seed}/400/225`,
+    "জাতীয় খবর": `https://picsum.photos/seed/natl${seed}/400/225`,
+    শিক্ষা: `https://picsum.photos/seed/edu${seed}/400/225`,
+    স্বাস্থ্য: `https://picsum.photos/seed/health${seed}/400/225`,
+    কৃষি: `https://picsum.photos/seed/agri${seed}/400/225`,
+    খেলাধুলা: `https://picsum.photos/seed/sports${seed}/400/225`,
+    "ধর্মীয় অনুষ্ঠান": `https://picsum.photos/seed/relig${seed}/400/225`,
+  };
+  return (
+    categoryImages[category] ?? `https://picsum.photos/seed/news${seed}/400/225`
+  );
 }
 
 function formatFetchTime(nanos: number): string {
@@ -66,61 +84,83 @@ function formatFetchTime(nanos: number): string {
 }
 
 function RSSCard({ item }: { item: RSSItem }) {
+  const imgSrc = getCategoryImage(item.category, item.id);
   return (
-    <div className="flex flex-col gap-2 p-4 bg-card border border-border rounded-sm hover:border-news-red/30 transition-colors">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span
-          className={`text-xs font-bold px-2 py-0.5 rounded-sm ${getSourceColor(item.source)}`}
-        >
-          {item.source}
-        </span>
-        {item.category && (
-          <span className="text-xs text-news-gray bg-muted px-2 py-0.5 rounded-sm">
-            {item.category}
-          </span>
-        )}
-        {item.pubDate && (
-          <span className="text-xs text-news-gray ml-auto">{item.pubDate}</span>
-        )}
+    <div className="flex flex-col bg-card border border-border rounded-sm hover:border-news-red/30 hover:shadow-md transition-all overflow-hidden">
+      {/* News image */}
+      <div className="aspect-video overflow-hidden bg-muted">
+        <img
+          src={imgSrc}
+          alt={item.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              "https://placehold.co/400x225/e2e8f0/64748b?text=সংবাদ";
+          }}
+        />
       </div>
-      <a
-        href={item.link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-sm font-semibold text-news-charcoal leading-snug line-clamp-2 hover:text-news-red transition-colors"
-        data-ocid="rss.link"
-      >
-        {item.title}
-      </a>
-      {item.description && (
-        <p className="text-xs text-news-gray line-clamp-2 leading-relaxed">
-          {item.description}
-        </p>
-      )}
-      <a
-        href={item.link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-xs text-news-red font-medium hover:underline self-start mt-1"
-        data-ocid="rss.link"
-      >
-        মূল সংবাদ পড়ুন
-        <ExternalLink className="w-3 h-3" />
-      </a>
+      {/* Content */}
+      <div className="flex flex-col gap-2 p-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className={`text-xs font-bold px-2 py-0.5 rounded-sm ${getSourceColor(item.source)}`}
+          >
+            {item.source}
+          </span>
+          {item.category && (
+            <span className="text-xs text-news-gray bg-muted px-2 py-0.5 rounded-sm">
+              {item.category}
+            </span>
+          )}
+          {item.pubDate && (
+            <span className="text-xs text-news-gray ml-auto">
+              {item.pubDate}
+            </span>
+          )}
+        </div>
+        <a
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-semibold text-news-charcoal leading-snug line-clamp-2 hover:text-news-red transition-colors"
+          data-ocid="rss.link"
+        >
+          {item.title}
+        </a>
+        {item.description && (
+          <p className="text-xs text-news-gray line-clamp-2 leading-relaxed">
+            {item.description}
+          </p>
+        )}
+        <a
+          href={item.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-news-red font-medium hover:underline self-start mt-1"
+          data-ocid="rss.link"
+        >
+          মূল সংবাদ পড়ুন
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
     </div>
   );
 }
 
 function SkeletonRSSCard() {
   return (
-    <div className="p-4 bg-card border border-border rounded-sm space-y-2">
-      <div className="flex gap-2">
-        <Skeleton className="h-5 w-20" />
-        <Skeleton className="h-5 w-16" />
+    <div className="bg-card border border-border rounded-sm overflow-hidden space-y-0">
+      <Skeleton className="w-full aspect-video" />
+      <div className="p-4 space-y-2">
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="h-5 w-16" />
+        </div>
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-24" />
       </div>
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-3 w-24" />
     </div>
   );
 }
