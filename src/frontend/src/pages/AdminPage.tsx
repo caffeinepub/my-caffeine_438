@@ -56,13 +56,9 @@ import {
   type SiteSettings,
   useAddArticle,
   useAddCategory,
-  useAdminLogin,
-  useAdminSessionLogout,
-  useAdminSessionValid,
   useAllArticles,
   useBreakingNewsText,
   useCategories,
-  useChangeAdminPassword,
   useDeleteArticle,
   useFeedSources,
   useLastFetchTime,
@@ -77,6 +73,33 @@ import {
   useUpdateArticle,
   useUpdateSiteSettings,
 } from "../hooks/useQueries";
+
+// ─── Frontend-only Admin Auth ──────────────────────────────────────────────────
+const ADMIN_EMAIL = "baligawnews.bd@gmail.com";
+const ADMIN_PW_KEY = "adminLocalPassword";
+const ADMIN_SESSION_KEY = "adminLocalSession";
+const DEFAULT_PASSWORD = "Baligaw@2024";
+
+function getStoredPassword(): string {
+  return localStorage.getItem(ADMIN_PW_KEY) || DEFAULT_PASSWORD;
+}
+function isLocalSessionValid(): boolean {
+  const session = localStorage.getItem(ADMIN_SESSION_KEY);
+  if (!session) return false;
+  try {
+    const { expires } = JSON.parse(session);
+    return Date.now() < expires;
+  } catch {
+    return false;
+  }
+}
+function createLocalSession() {
+  const expires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ expires }));
+}
+function clearLocalSession() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+}
 
 type ArticleFormData = {
   title: string;
@@ -1490,12 +1513,12 @@ function SettingsTab() {
 // ─── Password Change Section ─────────────────────────────────────────────────
 
 function PasswordChangeSection() {
-  const changePassword = useChangeAdminPassword();
   const [oldPw, setOldPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   const handleChange = async () => {
     if (newPw !== confirmPw) {
@@ -1506,18 +1529,18 @@ function PasswordChangeSection() {
       toast.error("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে");
       return;
     }
-    try {
-      await changePassword.mutateAsync({
-        oldPassword: oldPw,
-        newPassword: newPw,
-      });
-      toast.success("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে");
-      setOldPw("");
-      setNewPw("");
-      setConfirmPw("");
-    } catch (e: any) {
-      toast.error(e.message || "পাসওয়ার্ড পরিবর্তন করা যায়নি");
+    const currentPw = getStoredPassword();
+    if (oldPw !== currentPw) {
+      toast.error("পুরনো পাসওয়ার্ড সঠিক নয়");
+      return;
     }
+    setIsPending(true);
+    localStorage.setItem(ADMIN_PW_KEY, newPw);
+    setIsPending(false);
+    toast.success("পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে");
+    setOldPw("");
+    setNewPw("");
+    setConfirmPw("");
   };
 
   return (
@@ -1592,11 +1615,11 @@ function PasswordChangeSection() {
         </div>
         <Button
           onClick={handleChange}
-          disabled={changePassword.isPending || !oldPw || !newPw || !confirmPw}
+          disabled={isPending || !oldPw || !newPw || !confirmPw}
           className="bg-news-red hover:bg-news-red-dark text-white"
           data-ocid="settings.change_password.submit_button"
         >
-          {changePassword.isPending ? (
+          {isPending ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (
             <Save className="w-4 h-4 mr-2" />
@@ -1611,61 +1634,40 @@ function PasswordChangeSection() {
 // ─── Main AdminPage ───────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-  const adminLogin = useAdminLogin();
-  const adminLogout = useAdminSessionLogout();
-  const { data: isSessionValid, isLoading: isSessionLoading } =
-    useAdminSessionValid();
-
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() =>
+    isLocalSessionValid(),
+  );
   const [email, setEmail] = useState("baligawnews.bd@gmail.com");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Check if there is a token in localStorage at all
-  const hasToken =
-    typeof window !== "undefined"
-      ? !!localStorage.getItem("adminSessionToken")
-      : false;
-
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (!email.trim() || !password.trim()) {
       toast.error("ইমেইল ও পাসওয়ার্ড দিন");
       return;
     }
-    try {
-      await adminLogin.mutateAsync({ email, password });
-      toast.success("লগইন সফল হয়েছে");
-    } catch (e: any) {
-      toast.error(e.message || "লগইন ব্যর্থ হয়েছে। পাসওয়ার্ড চেক করুন।");
+    const correctPassword = getStoredPassword();
+    if (
+      email.trim().toLowerCase() !== ADMIN_EMAIL ||
+      password !== correctPassword
+    ) {
+      toast.error("ইমেইল বা পাসওয়ার্ড সঠিক নয়");
+      return;
     }
+    createLocalSession();
+    setIsLoggedIn(true);
+    toast.success("লগইন সফল হয়েছে");
   };
 
-  const handleLogout = async () => {
-    try {
-      await adminLogout.mutateAsync();
-      toast.success("লগআউট হয়েছে");
-    } catch {
-      // still clear local storage
-      localStorage.removeItem("adminSessionToken");
-    }
+  const handleLogout = () => {
+    clearLocalSession();
+    setIsLoggedIn(false);
+    setPassword("");
+    toast.success("লগআউট হয়েছে");
   };
-
-  // Show loading while checking session validity (only if we have a token)
-  if (hasToken && isSessionLoading) {
-    return (
-      <div
-        className="flex items-center justify-center min-h-[60vh]"
-        data-ocid="admin.loading_state"
-      >
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-news-red mx-auto mb-3" />
-          <p className="text-muted-foreground">সেশন যাচাই করা হচ্ছে...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Show login form if no valid session
-  if (!hasToken || !isSessionValid) {
+  if (!isLoggedIn) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] px-4 py-12">
         <div className="w-full max-w-md" data-ocid="admin.card">
@@ -1724,17 +1726,11 @@ export default function AdminPage() {
 
             <Button
               onClick={handleLogin}
-              disabled={
-                adminLogin.isPending || !email.trim() || !password.trim()
-              }
+              disabled={!email.trim() || !password.trim()}
               className="w-full bg-news-red hover:bg-news-red-dark text-white text-base py-5"
               data-ocid="admin.submit_button"
             >
-              {adminLogin.isPending ? (
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              ) : (
-                <LogIn className="w-5 h-5 mr-2" />
-              )}
+              <LogIn className="w-5 h-5 mr-2" />
               লগইন করুন
             </Button>
 
@@ -1773,14 +1769,9 @@ export default function AdminPage() {
         <Button
           variant="outline"
           onClick={handleLogout}
-          disabled={adminLogout.isPending}
           data-ocid="admin.secondary_button"
         >
-          {adminLogout.isPending ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <LogOut className="w-4 h-4 mr-2" />
-          )}
+          <LogOut className="w-4 h-4 mr-2" />
           লগআউট
         </Button>
       </div>

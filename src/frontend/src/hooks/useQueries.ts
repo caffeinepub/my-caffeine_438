@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import type { Article } from "../backend.d";
 import { createActorWithConfig } from "../config";
 import { useActor } from "./useActor";
-import { useInternetIdentity } from "./useInternetIdentity";
 
-// ─── Local types (do not import from backend.d.ts) ────────────────────────────
+// ─── Local types (do not import from backend.d.ts) ────────────────────────────────────────────
 export type RSSItem = {
   id: bigint;
   title: string;
@@ -42,7 +42,7 @@ export type SiteSettings = {
   reporters: Reporter[];
 };
 
-// ─── Existing hooks ───────────────────────────────────────────────────────────
+// ─── Existing hooks ────────────────────────────────────────────────────────────────
 
 export function usePublishedArticles() {
   const { actor, isFetching } = useActor();
@@ -115,7 +115,6 @@ export function useArticleById(id: bigint | null) {
     queryFn: async () => {
       if (!actor || id === null) return null;
       const result = await (actor as any).getArticleById(id);
-      // Motoko returns ?Article as [] | [Article]
       if (Array.isArray(result)) return result[0] ?? null;
       return result ?? null;
     },
@@ -133,22 +132,6 @@ export function useCategories() {
       return (actor as any).getCategories();
     },
     enabled: !!actor && !isFetching,
-  });
-}
-
-export function useIsAdmin() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principalStr = identity?.getPrincipal().toString() ?? "anonymous";
-  return useQuery<boolean>({
-    // Include principal in key so it re-fetches after login/logout
-    queryKey: ["isAdmin", principalStr],
-    queryFn: async () => {
-      if (!actor) return false;
-      return (actor as any).isCallerAdmin();
-    },
-    enabled: !!actor && !isFetching,
-    staleTime: 0,
   });
 }
 
@@ -315,7 +298,7 @@ export function useSetBreakingNewsText() {
   });
 }
 
-// ─── New RSS / Settings hooks ─────────────────────────────────────────────────
+// ─── RSS / Settings hooks ─────────────────────────────────────────────────────
 
 export function useRSSItems() {
   const { actor, isFetching } = useActor();
@@ -436,23 +419,14 @@ export function useUpdateSiteSettings() {
   });
 }
 
-export function useClaimAdmin() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error("Actor not available");
-      return (actor as any).claimAdminIfNoneExists() as Promise<boolean>;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
-    },
-  });
-}
-
-// ─── Email+Password Admin Auth hooks ─────────────────────────────────────────
+// ─── Email+Password Admin Auth hooks ───────────────────────────────────────────────────
 // Session token is stored in localStorage key: "adminSessionToken"
 
+/**
+ * Attempt admin login with email+password.
+ * On success, saves token to localStorage AND writes to window.__adminToken
+ * so useAdminSessionValid can reactively pick it up.
+ */
 export function useAdminLogin() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -460,31 +434,65 @@ export function useAdminLogin() {
       email,
       password,
     }: { email: string; password: string }) => {
-      // Create a fresh anonymous actor to avoid any actor state issues
+      // Always create a fresh anonymous actor to avoid any stale state
       const freshActor = await createActorWithConfig();
       const result = await (freshActor as any).adminLoginWithPassword(
         email,
         password,
       );
-      // Motoko variant: result has 'ok' key with token or 'err' key with message
       if ("ok" in result) {
-        localStorage.setItem("adminSessionToken", result.ok);
-        return result.ok as string;
+        const token = result.ok as string;
+        localStorage.setItem("adminSessionToken", token);
+        return token;
       }
       throw new Error(result.err as string);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminSessionValid"] });
+    onSuccess: (_token) => {
+      // Invalidate ALL queries so the session check re-runs with the new token
+      queryClient.invalidateQueries();
     },
   });
 }
 
+/**
+ * Check if the current admin session token is valid.
+ * Uses useState + useEffect so it re-reads localStorage reactively
+ * after login writes the token.
+ */
 export function useAdminSessionValid() {
+  const [token, setToken] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("adminSessionToken") ?? "";
+  });
+
+  // Re-read the token from localStorage when storage events fire
+  // (covers cross-tab) and also poll briefly after mount so that
+  // a login in the same tab is detected even without a storage event.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "adminSessionToken") {
+        setToken(e.newValue ?? "");
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    // Also poll localStorage a few times after mount so same-tab login is reflected
+    const interval = setInterval(() => {
+      const current = localStorage.getItem("adminSessionToken") ?? "";
+      setToken((prev) => (prev !== current ? current : prev));
+    }, 300);
+    // Stop polling after 5 seconds — login should have completed by then
+    const timeout = setTimeout(() => clearInterval(interval), 5000);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
+
   const { actor, isFetching } = useActor();
-  const token =
-    typeof window !== "undefined"
-      ? (localStorage.getItem("adminSessionToken") ?? "")
-      : "";
+
   return useQuery<boolean>({
     queryKey: ["adminSessionValid", token],
     queryFn: async () => {
@@ -508,7 +516,7 @@ export function useAdminSessionLogout() {
       localStorage.removeItem("adminSessionToken");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminSessionValid"] });
+      queryClient.invalidateQueries();
     },
   });
 }
@@ -531,7 +539,8 @@ export function useChangeAdminPassword() {
         oldPassword,
         newPassword,
       );
-      if ("err" in result) throw new Error(result.err as string);
+      if ("ok" in result) return;
+      throw new Error((result as any).err);
     },
   });
 }
