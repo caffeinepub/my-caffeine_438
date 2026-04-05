@@ -171,18 +171,28 @@ export function useCategories() {
   });
 }
 
+const LOGO_CHANGE_EVENT = "baligaw_logo_changed";
+
 export function useLogoUrl() {
-  return useQuery<string>({
-    queryKey: ["logoUrl"],
-    queryFn: async () => {
-      return localStorage.getItem(LOGO_URL_KEY) || DEFAULT_LOGO_URL;
-    },
-    staleTime: 0,
-  });
+  const [logoUrl, setLogoUrl] = useState<string>(
+    () => localStorage.getItem(LOGO_URL_KEY) || DEFAULT_LOGO_URL,
+  );
+
+  useEffect(() => {
+    const refresh = () =>
+      setLogoUrl(localStorage.getItem(LOGO_URL_KEY) || DEFAULT_LOGO_URL);
+    window.addEventListener(LOGO_CHANGE_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(LOGO_CHANGE_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  return { data: logoUrl, isLoading: false };
 }
 
 export function useSetLogoUrl() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (url: string) => {
       if (url.trim()) {
@@ -190,10 +200,8 @@ export function useSetLogoUrl() {
       } else {
         localStorage.removeItem(LOGO_URL_KEY);
       }
+      window.dispatchEvent(new Event(LOGO_CHANGE_EVENT));
       return url;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["logoUrl"] });
     },
   });
 }
@@ -418,34 +426,41 @@ export function useToggleFeedSource() {
   });
 }
 
+const SETTINGS_CHANGE_EVENT = "baligaw_settings_changed";
+
 /**
- * useSiteSettings — reads from localStorage instantly (no actor needed).
- * This guarantees all components always show the latest saved settings
- * immediately after saving, without any backend round-trip.
+ * useSiteSettings — reads from localStorage with useState.
+ * Listens to a custom event + storage event so ALL mounted components
+ * update instantly whenever settings are saved — no React Query stale cache issue.
  */
 export function useSiteSettings() {
-  return useQuery<SiteSettings>({
-    queryKey: ["siteSettings"],
-    queryFn: async () => {
-      return loadSettingsFromStorage();
-    },
-    staleTime: 0,
-  });
+  const [settings, setSettings] = useState<SiteSettings>(() =>
+    loadSettingsFromStorage(),
+  );
+
+  useEffect(() => {
+    const refresh = () => setSettings(loadSettingsFromStorage());
+    window.addEventListener(SETTINGS_CHANGE_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(SETTINGS_CHANGE_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  return { data: settings, isLoading: false };
 }
 
 /**
- * useUpdateSiteSettings — saves to localStorage and invalidates the query
+ * useUpdateSiteSettings — saves to localStorage and dispatches a custom event
  * so every component re-renders with the new data immediately.
  */
 export function useUpdateSiteSettings() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (settings: SiteSettings) => {
       saveSettingsToStorage(settings);
+      window.dispatchEvent(new Event(SETTINGS_CHANGE_EVENT));
       return settings;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["siteSettings"] });
     },
   });
 }

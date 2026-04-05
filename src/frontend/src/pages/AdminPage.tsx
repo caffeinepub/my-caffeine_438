@@ -48,7 +48,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Article } from "../backend.d";
 import {
@@ -695,9 +695,18 @@ function LogoTab() {
   const [initialized, setInitialized] = useState(false);
   const [previewError, setPreviewError] = useState(false);
 
-  if (!initialized && !isLoading) {
-    setUrl(currentLogoUrl);
-    setInitialized(true);
+  useEffect(() => {
+    if (!isLoading && !initialized) {
+      setUrl(currentLogoUrl);
+      setInitialized(true);
+    }
+  }, [currentLogoUrl, isLoading, initialized]);
+
+  // Reset preview error when logo URL changes using ref comparison (avoids lint issues)
+  const prevLogoUrlRef = useRef(currentLogoUrl);
+  if (prevLogoUrlRef.current !== currentLogoUrl) {
+    prevLogoUrlRef.current = currentLogoUrl;
+    setPreviewError(false);
   }
 
   const handleSave = async () => {
@@ -743,6 +752,8 @@ function LogoTab() {
                   src={currentLogoUrl}
                   alt="লোগো প্রিভিউ"
                   className="max-h-20 max-w-full object-contain"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                   onError={() => setPreviewError(true)}
                 />
               ) : (
@@ -794,6 +805,8 @@ function LogoTab() {
                   src={url}
                   alt="নতুন লোগো প্রিভিউ"
                   className="max-h-16 max-w-full object-contain"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display =
                       "none";

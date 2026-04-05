@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Menu, Newspaper, Search, X } from "lucide-react";
 import { useState } from "react";
-import { useSiteSettings } from "../hooks/useQueries";
+import { useLogoUrl, useSiteSettings } from "../hooks/useQueries";
 import { Link } from "../router";
 
 const NAV_CATEGORIES = [
@@ -58,11 +58,10 @@ export default function Header() {
 
   const siteName = settings?.siteName || "বালিগাঁও নিউজ";
   const tagline = settings?.tagline || "Voice of Truth and Freedom";
-  const logoUrl =
-    settings?.tagline !== undefined
-      ? localStorage.getItem("baligaw_logoUrl") ||
-        "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL"
-      : "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL";
+  const {
+    data:
+      logoUrl = "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL",
+  } = useLogoUrl();
 
   return (
     <header className="w-full">
