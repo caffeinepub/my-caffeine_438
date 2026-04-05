@@ -135,26 +135,30 @@ export function useCategories() {
   });
 }
 
+const LOGO_URL_KEY = "baligaw_logoUrl";
+const DEFAULT_LOGO_URL =
+  "https://drive.google.com/uc?export=view&id=1CtBBizUoMOQKmRvv3s4P38-3ZdhZoysL";
+
 export function useLogoUrl() {
-  const { actor, isFetching } = useActor();
   return useQuery<string>({
     queryKey: ["logoUrl"],
     queryFn: async () => {
-      if (!actor) return "";
-      return (actor as any).getLogoUrl();
+      return localStorage.getItem(LOGO_URL_KEY) || DEFAULT_LOGO_URL;
     },
-    enabled: !!actor && !isFetching,
-    staleTime: 60_000,
+    staleTime: 0,
   });
 }
 
 export function useSetLogoUrl() {
-  const { actor } = useActor();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (url: string) => {
-      if (!actor) throw new Error("Actor not available");
-      return (actor as any).setLogoUrl(url);
+      if (url.trim()) {
+        localStorage.setItem(LOGO_URL_KEY, url.trim());
+      } else {
+        localStorage.removeItem(LOGO_URL_KEY);
+      }
+      return url;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["logoUrl"] });

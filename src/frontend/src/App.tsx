@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import BreakingNewsTicker from "./components/BreakingNewsTicker";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
+import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
 import CategoryPage from "./pages/CategoryPage";
 import HomePage from "./pages/HomePage";
@@ -16,6 +17,7 @@ function AppLayout() {
       <main className="flex-1">
         <Route path="/" component={HomePage} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/about" component={AboutPage} />
         <Route path="/category/:name" component={CategoryPage} />
         <Route path="/news/:id" component={NewsDetailPage} />
       </main>

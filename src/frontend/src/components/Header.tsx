@@ -137,6 +137,15 @@ export default function Header() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link
+                to="/about"
+                className="block px-3 py-3 text-sm font-semibold hover:bg-news-red-dark transition-colors whitespace-nowrap"
+                data-ocid="header.link"
+              >
+                এবাউট
+              </Link>
+            </li>
             <li className="ml-auto">
               <Link
                 to="/admin"
@@ -163,6 +172,16 @@ export default function Header() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  to="/about"
+                  className="block px-4 py-3 text-sm font-semibold hover:bg-news-red-dark transition-colors border-t border-white/10"
+                  onClick={() => setMobileMenuOpen(false)}
+                  data-ocid="header.link"
+                >
+                  এবাউট
+                </Link>
+              </li>
               <li>
                 <Link
                   to="/admin"
