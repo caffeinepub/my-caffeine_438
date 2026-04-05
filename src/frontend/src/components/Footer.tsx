@@ -1,10 +1,18 @@
 import { Newspaper } from "lucide-react";
+import { useSiteSettings } from "../hooks/useQueries";
 import { Link } from "../router";
 
 const NAV_CATEGORIES = ["রাজনীতি", "খেলাধুলা", "বিনোদন", "আন্তর্জাতিক", "প্রযুক্তি"];
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { data: settings } = useSiteSettings();
+
+  const siteName = settings?.siteName || "বালিগাঁও নিউজ";
+  const tagline = settings?.tagline || "বালিগাঁওয়ের বিশ্বস্ত সংবাদ";
+  const contactEmail = settings?.contactEmail || "baligawnews.bd@gmail.com";
+  const address = settings?.address || "বালিগাঁও, পশ্চিমবঙ্গ";
+  const editorEmail = settings?.editorEmail || "";
 
   return (
     <footer className="bg-news-charcoal text-white mt-12">
@@ -17,12 +25,12 @@ export default function Footer() {
                 <Newspaper className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold">বালিগাঁও নিউজ</h3>
-                <p className="text-xs text-white/60">বালিগাঁওয়ের বিশ্বস্ত সংবাদ</p>
+                <h3 className="text-lg font-bold">{siteName}</h3>
+                <p className="text-xs text-white/60">{tagline}</p>
               </div>
             </div>
             <p className="text-sm text-white/60 leading-relaxed">
-              বালিগাঁও নিউজ বালিগাঁওয়ের একটি বিশ্বস্ত অনলাইন সংবাদ মাধ্যম। আমরা সত্য, নিরপেক্ষ
+              {siteName} বালিগাঁওয়ের একটি বিশ্বস্ত অনলাইন সংবাদ মাধ্যম। আমরা সত্য, নিরপেক্ষ
               ও সময়মতো সংবাদ পরিবেশনে প্রতিশ্রুতিবদ্ধ।
             </p>
           </div>
@@ -52,17 +60,39 @@ export default function Footer() {
             <h4 className="text-sm font-bold uppercase tracking-wider mb-4 text-white/80">
               যোগাযোগ
             </h4>
-            <address className="not-italic text-sm text-white/60 space-y-1">
-              <p>বালিগাঁও, পশ্চিমবঙ্গ</p>
-              <p>সম্পাদকীয়: editor@baligawnews.com</p>
-              <p>বিজ্ঞাপন: ads@baligawnews.com</p>
+            <address className="not-italic text-sm text-white/60 space-y-1.5">
+              {address && <p className="leading-snug">{address}</p>}
+              {editorEmail && (
+                <p>
+                  সম্পাদকীয়:{" "}
+                  <a
+                    href={`mailto:${editorEmail}`}
+                    className="hover:text-white transition-colors"
+                  >
+                    {editorEmail}
+                  </a>
+                </p>
+              )}
+              {contactEmail && (
+                <p>
+                  যোগাযোগ:{" "}
+                  <a
+                    href={`mailto:${contactEmail}`}
+                    className="hover:text-white transition-colors"
+                  >
+                    {contactEmail}
+                  </a>
+                </p>
+              )}
             </address>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/50">
-          <p>© {year} বালিগাঁও নিউজ। সর্বস্বত্ব সংরক্ষিত।</p>
+          <p>
+            © {year} {siteName}। সর্বস্বত্ব সংরক্ষিত।
+          </p>
           <p>
             Built with ♥ using{" "}
             <a

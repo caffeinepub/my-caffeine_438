@@ -27,7 +27,14 @@ export function useActor() {
 
       const actor = await createActorWithConfig(actorOptions);
       const adminToken = getSecretParameter("caffeineAdminToken") || "";
-      await actor._initializeAccessControlWithSecret(adminToken);
+      // Only call initialization if we have a token; ignore errors gracefully
+      if (adminToken) {
+        try {
+          await actor._initializeAccessControlWithSecret(adminToken);
+        } catch (_e) {
+          // Already initialized or token mismatch — not a fatal error
+        }
+      }
       return actor;
     },
     // Only refetch when identity changes

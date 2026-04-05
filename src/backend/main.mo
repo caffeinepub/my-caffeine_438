@@ -56,33 +56,68 @@ actor {
   var nextId : Nat = 9;
   let articles = Map.empty<Nat, Article>();
   var categories : [Text] = ["রাজনীতি", "খেলাধুলা", "বিনোদন", "আন্তর্জাতিক", "প্রযুক্তি", "অর্থনীতি", "স্বাস্থ্য"];
-  var breakingNewsText : Text = "ঢাকায় আজ বড় ট্রাফিক জ্যাম • সংসদে নতুন বিল পাস • আন্তর্জাতিক ক্রিকেট দলের বাংলাদেশ সফর নিশ্চিত";
+  var breakingNewsText : Text = "ঢাকায় আজ বড় ট্রাফিক জ্যাম • সংসদে নতুন বিল পাস • আন্তর্জাতিক ক্রিকেট দলের বাংলাদেশ সফর নিশ্চিত";
   var logoUrl : Text = "";
 
-  // ---- Site Settings ----
-  public type SiteSettings = {
+  // ---- Reporter type ----
+  public type Reporter = {
+    name : Text;
+    email : Text;
+    role : Text;
+    phone : Text;
+  };
+
+  // ---- Site Settings (v1 - legacy migration stub) ----
+  // This stable variable holds the old 4-field settings from the previous version.
+  // It is read once in postupgrade to migrate data, then ignored.
+  type SiteSettings_v1 = {
     siteName : Text;
     tagline : Text;
     contactEmail : Text;
     footerText : Text;
   };
-
-  var siteSettings : SiteSettings = {
+  var siteSettings : SiteSettings_v1 = {
     siteName = "বালিগাঁও নিউজ";
-    tagline = "বালিগাঁওয়ের বিশ্বস্ত সংবাদ";
-    contactEmail = "";
+    tagline = "বালিগাঁওয়ের বিশ্বস্ত সংবাদ";
+    contactEmail = "baligawnews.bd@gmail.com";
     footerText = "";
   };
 
+  // ---- Site Settings (v2 - current) ----
+  public type SiteSettings = {
+    siteName : Text;
+    tagline : Text;
+    contactEmail : Text;
+    footerText : Text;
+    editorName : Text;
+    editorEmail : Text;
+    editorPhone : Text;
+    address : Text;
+    reporters : [Reporter];
+  };
+
+  // siteSettings_v2 holds current settings; migrated from siteSettings in postupgrade
+  var siteSettings_v2 : SiteSettings = {
+    siteName = "বালিগাঁও নিউজ";
+    tagline = "বালিগাঁওয়ের বিশ্বস্ত সংবাদ";
+    contactEmail = "baligawnews.bd@gmail.com";
+    footerText = "";
+    editorName = "";
+    editorEmail = "";
+    editorPhone = "";
+    address = "";
+    reporters = [];
+  };
+
   public query func getSiteSettings() : async SiteSettings {
-    siteSettings;
+    siteSettings_v2;
   };
 
   public shared ({ caller }) func updateSiteSettings(settings : SiteSettings) : async () {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can update site settings");
     };
-    siteSettings := settings;
+    siteSettings_v2 := settings;
   };
 
   // ---- RSS Feed types ----
@@ -117,29 +152,23 @@ actor {
   ];
 
   // ---- Simple XML text extraction helper ----
-  // Extract content between <tag> and </tag>, stripping CDATA if present
   func extractTag(xml : Text, tag : Text) : Text {
     let openTag = "<" # tag # ">";
     let closeTag = "</" # tag # ">";
     let cdataOpen = "<![CDATA[";
     let cdataClose = "]]>";
-    // Split on openTag; if we get 2+ parts, the content is after the first split
     let parts = xml.split(#text openTag);
     switch (parts.next()) {
       case (null) { "" };
       case (?_) {
-        // everything after the first occurrence of openTag
         switch (parts.next()) {
           case (null) { "" };
           case (?afterOpen) {
-            // now split on closeTag to get the inner content
             let innerParts = afterOpen.split(#text closeTag);
             switch (innerParts.next()) {
               case (null) { "" };
               case (?content) {
-                // Strip CDATA wrapper if present
                 if (content.startsWith(#text cdataOpen)) {
-                  // Remove leading <![CDATA[ and trailing ]]>
                   let afterCdata = content.split(#text cdataOpen);
                   switch (afterCdata.next()) {
                     case (null) { content };
@@ -167,14 +196,11 @@ actor {
     };
   };
 
-  // Split XML into item blocks between <item> and </item>
   func splitItems(xml : Text) : [Text] {
     let itemOpen = "<item>";
     let itemClose = "</item>";
     var items : [Text] = [];
-    // Split on itemOpen to get chunks after each <item>
     let chunks = xml.split(#text itemOpen);
-    // Skip the first chunk (before first <item>)
     switch (chunks.next()) {
       case (null) {};
       case (?_) {
@@ -182,7 +208,6 @@ actor {
           switch (chunks.next()) {
             case (null) { break outerLoop };
             case (?chunk) {
-              // Extract content before </item>
               let innerParts = chunk.split(#text itemClose);
               switch (innerParts.next()) {
                 case (null) {};
@@ -239,12 +264,9 @@ actor {
           let (items, nextId) = parseRSSItems(xml, source.name, source.category, idCounter);
           allItems := allItems.concat(items);
           idCounter := nextId;
-        } catch (_) {
-          // silently skip failed feeds
-        };
+        } catch (_) {};
       };
     };
-    // Keep only the most recent 200 items
     let limited = if (allItems.size() > 200) {
       allItems.sliceToArray(0, 200);
     } else {
@@ -257,7 +279,6 @@ actor {
   };
 
   public query func getRSSItems() : async [RSSItem] {
-    // return in reverse order (newest first by id)
     let arr = rssItems;
     var reversed : [RSSItem] = [];
     var i = arr.size();
@@ -306,11 +327,11 @@ actor {
     articles.add(1, {
       id = 1;
       title = "জাতীয় সংসদে নতুন বাজেট অধিবেশন শুরু, অর্থমন্ত্রীর বক্তব্য";
-      content = "আজ সোমবার জাতীয় সংসদে ২০২৬-২৭ অর্থবছরের বাজেট অধিবেশন শুরু হয়েছে। অর্থমন্ত্রী তার বক্তব্যে দেশের অর্থনৈতিক উন্নয়নের চিত্র তুলে ধরেন।";
+      content = "আজ সোমবার জাতীয় সংসদে ২০২৬-২৭ অর্থবছরের বাজেট অধিবেশন শুরু হয়েছে। অর্থমন্ত্রী তার বক্তব্যে দেশের অর্থনৈতিক উন্নয়নের চিত্র তুলে ধরেন।";
       category = "রাজনীতি";
       imageUrl = "https://picsum.photos/800/450?random=1";
       author = "মোহাম্মদ রফিকুল ইসলাম";
-      excerpt = "বাজেট অধিবেশনে অর্থমন্ত্রী উন্নয়নমূলক প্রকল্পের ঘোষণা দেন।";
+      excerpt = "বাজেট অধিবেশনে অর্থমন্ত্রী উন্নয়নমূলক প্রকল্পের ঘোষণা দেন।";
       date = "৫ এপ্রিল ২০২৬";
       isBreaking = true;
       isSlider = true;
@@ -319,11 +340,11 @@ actor {
     articles.add(2, {
       id = 2;
       title = "বাংলাদেশ ক্রিকেট দল ভারতের বিপক্ষে ঐতিহাসিক জয় অর্জন করেছে";
-      content = "চট্টগ্রামে অনুষ্ঠিত টেস্ট ম্যাচে বাংলাদেশ ক্রিকেট দল ভারতকে ৭ উইকেটে হারিয়ে ঐতিহাসিক জয় অর্জন করেছে।";
+      content = "চট্টগ্রামে অনুষ্ঠিত টেস্ট ম্যাচে বাংলাদেশ ক্রিকেট দল ভারতকে ৭ উইকেটে হারিয়ে ঐতিহাসিক জয় অর্জন করেছে।";
       category = "খেলাধুলা";
       imageUrl = "https://picsum.photos/800/450?random=2";
-      author = "সুমাইয়া আক্তার";
-      excerpt = "চট্টগ্রামে টেস্ট ম্যাচে বাংলাদেশ ভারতকে ৭ উইকেটে হারিয়ে ঐতিহাসিক জয় অর্জন।";
+      author = "সুমাইয়া আক্তার";
+      excerpt = "চট্টগ্রামে টেস্ট ম্যাচে বাংলাদেশ ভারতকে ৭ উইকেটে হারিয়ে ঐতিহাসিক জয় অর্জন।";
       date = "৫ এপ্রিল ২০২৬";
       isBreaking = true;
       isSlider = true;
@@ -332,11 +353,11 @@ actor {
     articles.add(3, {
       id = 3;
       title = "ঢাকা আন্তর্জাতিক চলচ্চিত্র উৎসবে বাংলাদেশি চলচ্চিত্র সেরা পুরস্কার জিতেছে";
-      content = "ঢাকায় অনুষ্ঠিত ২২তম আন্তর্জাতিক চলচ্চিত্র উৎসবে বাংলাদেশি চলচ্চিত্র সেরা পুরস্কার অর্জন করেছে।";
+      content = "ঢাকায় অনুষ্ঠিত ২২তম আন্তর্জাতিক চলচ্চিত্র উৎসবে বাংলাদেশি চলচ্চিত্র সেরা পুরস্কার অর্জন করেছে।";
       category = "বিনোদন";
       imageUrl = "https://picsum.photos/800/450?random=3";
       author = "নাসরিন সুলতানা";
-      excerpt = "ঢাকায় ২২তম আন্তর্জাতিক চলচ্চিত্র উৎসবে বাংলাদেশি চলচ্চিত্র সেরা পুরস্কার অর্জন।";
+      excerpt = "ঢাকায় ২২তম আন্তর্জাতিক চলচ্চিত্র উৎসবে বাংলাদেশি চলচ্চিত্র সেরা পুরস্কার অর্জন।";
       date = "৪ এপ্রিল ২০২৬";
       isBreaking = false;
       isSlider = true;
@@ -344,8 +365,8 @@ actor {
     });
     articles.add(4, {
       id = 4;
-      title = "জাতিসংঘে বাংলাদেশের প্রস্তাব সর্বসম্মতিক্রমে গৃহীত হয়েছে";
-      content = "জাতিসংঘ সাধারণ পরিষদে বাংলাদেশের উত্থাপিত জলবায়ু পরিবর্তন মোকাবেলা সংক্রান্ত প্রস্তাবটি সর্বসম্মতিক্রমে গৃহীত হয়েছে।";
+      title = "জাতিসংঘে বাংলাদেশের প্রস্তাব সর্বসম্মতিক্রমে গৃহীত হয়েছে";
+      content = "জাতিসংঘ সাধারণ পরিষদে বাংলাদেশের উত্থাপিত জলবায়ু পরিবর্তন মোকাবেলা সংক্রান্ত প্রস্তাবটি সর্বসম্মতিক্রমে গৃহীত হয়েছে।";
       category = "আন্তর্জাতিক";
       imageUrl = "https://picsum.photos/800/450?random=4";
       author = "আরিফ হোসেন";
@@ -357,12 +378,12 @@ actor {
     });
     articles.add(5, {
       id = 5;
-      title = "বাংলাদেশে ৫জি নেটওয়ার্ক পরীক্ষামূলকভাবে চালু হচ্ছে আগামী মাসে";
+      title = "বাংলাদেশে ৫জি নেটওয়ার্ক পরীক্ষামূলকভাবে চালু হচ্ছে আগামী মাসে";
       content = "বাংলাদেশ টেলিযোগাযোগ নিয়ন্ত্রণ কমিশন ঘোষণা করেছে যে আগামী মে মাস থেকে ৫জি পরীক্ষামূলকভাবে চালু হবে।";
       category = "প্রযুক্তি";
       imageUrl = "https://picsum.photos/800/450?random=5";
       author = "শিরীন আখতার";
-      excerpt = "আগামী মে মাস থেকে ঢাকা ও চট্টগ্রামে পরীক্ষামূলকভাবে ৫জি নেটওয়ার্ক চালু হবে।";
+      excerpt = "আগামী মে মাস থেকে ঢাকা ও চট্টগ্রামে পরীক্ষামূলকভাবে ৫জি নেটওয়ার্ক চালু হবে।";
       date = "৩ এপ্রিল ২০২৬";
       isBreaking = false;
       isSlider = false;
@@ -371,7 +392,7 @@ actor {
     articles.add(6, {
       id = 6;
       title = "দেশে নতুন কর্মসংস্থান নীতি ঘোষণা, লক্ষাধিক তরুণ উপকৃত হবেন";
-      content = "সরকার নতুন কর্মসংস্থান নীতি ঘোষণা করেছে যার আওতায় আগামী পাঁচ বছরে ২০ লক্ষ নতুন কর্মসংস্থান সৃষ্টির লক্ষ্যমাত্রা।";
+      content = "সরকার নতুন কর্মসংস্থান নীতি ঘোষণা করেছে যার আওতায় আগামী পাঁচ বছরে ২০ লক্ষ নতুন কর্মসংস্থান সৃষ্টির লক্ষ্যমাত্রা।";
       category = "অর্থনীতি";
       imageUrl = "https://picsum.photos/800/450?random=6";
       author = "জাহিদুল হক";
@@ -396,12 +417,12 @@ actor {
     });
     articles.add(8, {
       id = 8;
-      title = "প্রিমিয়ার লিগে আবাহনী লিমিটেড চ্যাম্পিয়ন হয়েছে";
-      content = "বাংলাদেশ ফুটবল প্রিমিয়ার লিগে আবাহনী লিমিটেড এবারের মৌসুমে চ্যাম্পিয়ন হয়েছে।";
+      title = "প্রিমিয়ার লিগে আবাহনী লিমিটেড চ্যাম্পিয়ন হয়েছে";
+      content = "বাংলাদেশ ফুটবল প্রিমিয়ার লিগে আবাহনী লিমিটেড এবারের মৌসুমে চ্যাম্পিয়ন হয়েছে।";
       category = "খেলাধুলা";
       imageUrl = "https://picsum.photos/800/450?random=8";
       author = "রাজিব আহমেদ";
-      excerpt = "ফুটবল প্রিমিয়ার লিগে আবাহনী লিমিটেড মোহামেডানকে ৩-১ গোলে হারিয়ে চ্যাম্পিয়ন।";
+      excerpt = "ফুটবল প্রিমিয়ার লিগে আবাহনী লিমিটেড মোহামেডানকে ৩-১ গোলে হারিয়ে চ্যাম্পিয়ন।";
       date = "২ এপ্রিল ২০২৬";
       isBreaking = false;
       isSlider = false;
@@ -553,4 +574,23 @@ actor {
     };
     logoUrl := url;
   };
+
+  // ---- Migration: copy v1 siteSettings to v2 on upgrade ----
+  system func postupgrade() {
+    // Only migrate if v2 still has the default siteName (i.e., first upgrade)
+    if (siteSettings_v2.siteName == "বালিগাঁও নিউজ" and siteSettings_v2.contactEmail == "baligawnews.bd@gmail.com") {
+      siteSettings_v2 := {
+        siteName = siteSettings.siteName;
+        tagline = siteSettings.tagline;
+        contactEmail = siteSettings.contactEmail;
+        footerText = siteSettings.footerText;
+        editorName = "";
+        editorEmail = "";
+        editorPhone = "";
+        address = "";
+        reporters = [];
+      };
+    };
+  };
+
 };

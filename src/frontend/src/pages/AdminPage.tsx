@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -16,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -41,6 +43,7 @@ import {
   Settings,
   ShieldAlert,
   Trash2,
+  UserPlus,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -48,6 +51,7 @@ import { toast } from "sonner";
 import type { Article } from "../backend.d";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
+  type Reporter,
   type SiteSettings,
   useAddArticle,
   useAddCategory,
@@ -1062,8 +1066,14 @@ function RSSTab() {
     </div>
   );
 }
-
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
+
+type ReporterWithId = Reporter & { _key: number };
+let _reporterKeyCounter = 0;
+
+function withKey(r: Reporter): ReporterWithId {
+  return { ...r, _key: ++_reporterKeyCounter };
+}
 
 function SettingsTab() {
   const { data: settings, isLoading } = useSiteSettings();
@@ -1073,11 +1083,22 @@ function SettingsTab() {
     tagline: "",
     contactEmail: "",
     footerText: "",
+    editorName: "",
+    editorEmail: "",
+    editorPhone: "",
+    address: "",
+    reporters: [],
   });
+  const [reporterKeys, setReporterKeys] = useState<number[]>([]);
 
   useEffect(() => {
     if (settings) {
-      setForm(settings);
+      const reporters = (settings.reporters ?? []).map(withKey);
+      setReporterKeys(reporters.map((r) => r._key));
+      setForm({
+        ...settings,
+        reporters: reporters.map(({ _key: _, ...r }) => r),
+      });
     }
   }, [settings]);
 
@@ -1090,12 +1111,40 @@ function SettingsTab() {
     }
   };
 
+  const addReporter = () => {
+    setForm((p) => ({
+      ...p,
+      reporters: [...p.reporters, { name: "", email: "", role: "", phone: "" }],
+    }));
+  };
+
+  const removeReporter = (idx: number) => {
+    setReporterKeys((k) => k.filter((_, i) => i !== idx));
+    setForm((p) => ({
+      ...p,
+      reporters: p.reporters.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const updateReporter = (
+    idx: number,
+    field: keyof Reporter,
+    value: string,
+  ) => {
+    setForm((p) => {
+      const reporters = [...p.reporters];
+      reporters[idx] = { ...reporters[idx], [field]: value };
+      return { ...p, reporters };
+    });
+  };
+
   if (isLoading) {
     return (
-      <div className="max-w-2xl space-y-4" data-ocid="admin.loading_state">
-        {[1, 2, 3, 4].map((k) => (
-          <div key={k} className="space-y-1">
-            <Skeleton className="h-4 w-32" />
+      <div className="max-w-3xl space-y-6" data-ocid="admin.loading_state">
+        {[1, 2, 3, 4, 5].map((k) => (
+          <div key={k} className="space-y-3 p-4 border rounded-lg">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
         ))}
@@ -1104,83 +1153,328 @@ function SettingsTab() {
   }
 
   return (
-    <div className="max-w-2xl" data-ocid="admin.panel">
-      <h2 className="text-lg font-bold mb-1 flex items-center gap-2">
-        <Settings className="w-5 h-5" />
-        সাইট সেটিংস
-      </h2>
-      <p className="text-sm text-muted-foreground mb-6">
-        পোর্টালের মূল তথ্য এবং যোগাযোগের বিবরণ আপডেট করুন।
-      </p>
+    <div className="max-w-3xl" data-ocid="admin.panel">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="bg-news-red/10 p-2 rounded-lg">
+          <Settings className="w-5 h-5 text-news-red" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-news-charcoal">সাইট সেটিংস</h2>
+          <p className="text-sm text-muted-foreground">
+            পোর্টালের সব তথ্য এখান থেকে আপডেট করুন
+          </p>
+        </div>
+      </div>
 
-      <div className="space-y-5">
-        <div className="space-y-1.5">
-          <Label htmlFor="siteName">সাইটের নাম</Label>
-          <Input
-            id="siteName"
-            value={form.siteName}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, siteName: e.target.value }))
-            }
-            placeholder="বালিগাঁও নিউজ"
-            data-ocid="admin.input"
-          />
+      <div className="space-y-6 mt-6">
+        {/* ── Section 1: প্রতিষ্ঠানের তথ্য ── */}
+        <div className="border rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-muted/40 px-4 py-3 border-b flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className="text-xs font-semibold text-news-red border-news-red/40 bg-news-red/5"
+            >
+              ০১
+            </Badge>
+            <h3 className="font-semibold text-sm">প্রতিষ্ঠানের তথ্য</h3>
+          </div>
+          <div className="p-5 space-y-4">
+            {/* Logo info */}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-dashed">
+              <ImageIcon className="w-5 h-5 text-muted-foreground shrink-0" />
+              <p className="text-sm text-muted-foreground">
+                লোগো পরিবর্তনের জন্য উপরের{" "}
+                <strong className="text-foreground">"লোগো"</strong> ট্যাব ব্যবহার
+                করুন।
+              </p>
+            </div>
+
+            <Separator />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="siteName">সাইটের নাম</Label>
+                <Input
+                  id="siteName"
+                  value={form.siteName}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, siteName: e.target.value }))
+                  }
+                  placeholder="বালিগাঁও নিউজ"
+                  data-ocid="settings.site_name.input"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="tagline">ট্যাগলাইন</Label>
+                <Input
+                  id="tagline"
+                  value={form.tagline}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, tagline: e.target.value }))
+                  }
+                  placeholder="বালিগাঁওয়ের বিশ্বস্ত সংবাদ"
+                  data-ocid="settings.tagline.input"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="tagline">ট্যাগলাইন</Label>
-          <Input
-            id="tagline"
-            value={form.tagline}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, tagline: e.target.value }))
-            }
-            placeholder="বালিগাঁওয়ের বিশ্বস্ত সংবাদ"
-            data-ocid="admin.input"
-          />
+        {/* ── Section 2: সম্পাদকীয় তথ্য ── */}
+        <div className="border rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-muted/40 px-4 py-3 border-b flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className="text-xs font-semibold text-news-red border-news-red/40 bg-news-red/5"
+            >
+              ০২
+            </Badge>
+            <h3 className="font-semibold text-sm">সম্পাদকীয় তথ্য</h3>
+          </div>
+          <div className="p-5 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="editorName">সম্পাদকের নাম</Label>
+                <Input
+                  id="editorName"
+                  value={form.editorName}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, editorName: e.target.value }))
+                  }
+                  placeholder="মোঃ রহিম উদ্দিন"
+                  data-ocid="settings.editor_name.input"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="editorPhone">সম্পাদকের ফোন নম্বর</Label>
+                <Input
+                  id="editorPhone"
+                  type="tel"
+                  value={form.editorPhone}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, editorPhone: e.target.value }))
+                  }
+                  placeholder="+880 1XXXXXXXXX"
+                  data-ocid="settings.editor_phone.input"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="editorEmail">সম্পাদকের ইমেইল</Label>
+              <Input
+                id="editorEmail"
+                type="email"
+                value={form.editorEmail}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, editorEmail: e.target.value }))
+                }
+                placeholder="editor@baligawnews.com"
+                data-ocid="settings.editor_email.input"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="contactEmail">যোগাযোগ ইমেইল</Label>
-          <Input
-            id="contactEmail"
-            type="email"
-            value={form.contactEmail}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, contactEmail: e.target.value }))
-            }
-            placeholder="baligawnews.bd@gmail.com"
-            data-ocid="admin.input"
-          />
+        {/* ── Section 3: প্রতিষ্ঠানের ঠিকানা ── */}
+        <div className="border rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-muted/40 px-4 py-3 border-b flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className="text-xs font-semibold text-news-red border-news-red/40 bg-news-red/5"
+            >
+              ০৩
+            </Badge>
+            <h3 className="font-semibold text-sm">প্রতিষ্ঠানের ঠিকানা</h3>
+          </div>
+          <div className="p-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="address">সম্পূর্ণ ঠিকানা</Label>
+              <Textarea
+                id="address"
+                value={form.address}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, address: e.target.value }))
+                }
+                placeholder="বালিগাঁও, পশ্চিমবঙ্গ, ভারত&#10;পিন: XXXXXX"
+                rows={3}
+                data-ocid="settings.address.textarea"
+              />
+              <p className="text-xs text-muted-foreground">
+                এই ঠিকানা ওয়েবসাইটের ফুটারে প্রদর্শিত হবে।
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="footerText">ফুটার টেক্সট</Label>
-          <Textarea
-            id="footerText"
-            value={form.footerText}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, footerText: e.target.value }))
-            }
-            placeholder="© বালিগাঁও নিউজ। সর্বস্বত্ব সংরক্ষিত।"
-            rows={3}
-            data-ocid="admin.textarea"
-          />
+        {/* ── Section 4: সংবাদকর্মী/রিপোর্টার তালিকা ── */}
+        <div className="border rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="text-xs font-semibold text-news-red border-news-red/40 bg-news-red/5"
+              >
+                ০৪
+              </Badge>
+              <h3 className="font-semibold text-sm">সংবাদকর্মী ও রিপোর্টার</h3>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addReporter}
+              className="text-xs border-news-red/30 text-news-red hover:bg-news-red/5"
+              data-ocid="settings.reporter.add_button"
+            >
+              <UserPlus className="w-3.5 h-3.5 mr-1" />
+              নতুন সাংবাদিক যোগ করুন
+            </Button>
+          </div>
+          <div className="p-5">
+            {form.reporters.length === 0 ? (
+              <div
+                className="text-center py-8 text-muted-foreground"
+                data-ocid="settings.reporters.empty_state"
+              >
+                <UserPlus className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">কোনো সাংবাদিক যোগ করা হয়নি।</p>
+                <p className="text-xs mt-1">
+                  উপরের বাটনে ক্লিক করে সাংবাদিক যোগ করুন।
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4" data-ocid="settings.reporters.list">
+                {form.reporters.map((reporter, idx) => (
+                  <div
+                    key={reporterKeys[idx] ?? idx}
+                    className="relative border rounded-lg p-4 bg-muted/20"
+                    data-ocid={`settings.reporter.item.${idx + 1}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => removeReporter(idx)}
+                      className="absolute top-3 right-3 text-muted-foreground hover:text-destructive transition-colors p-1 rounded hover:bg-destructive/10"
+                      aria-label="সরান"
+                      data-ocid={`settings.reporter.delete_button.${idx + 1}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-8">
+                      <div className="space-y-1">
+                        <Label className="text-xs">নাম</Label>
+                        <Input
+                          value={reporter.name}
+                          onChange={(e) =>
+                            updateReporter(idx, "name", e.target.value)
+                          }
+                          placeholder="সাংবাদিকের নাম"
+                          className="h-9 text-sm"
+                          data-ocid={`settings.reporter.name.input.${idx + 1}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">ভূমিকা / পদবি</Label>
+                        <Input
+                          value={reporter.role}
+                          onChange={(e) =>
+                            updateReporter(idx, "role", e.target.value)
+                          }
+                          placeholder="সিনিয়র রিপোর্টার"
+                          className="h-9 text-sm"
+                          data-ocid={`settings.reporter.role.input.${idx + 1}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">ইমেইল</Label>
+                        <Input
+                          type="email"
+                          value={reporter.email}
+                          onChange={(e) =>
+                            updateReporter(idx, "email", e.target.value)
+                          }
+                          placeholder="reporter@baligawnews.com"
+                          className="h-9 text-sm"
+                          data-ocid={`settings.reporter.email.input.${idx + 1}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">ফোন নম্বর</Label>
+                        <Input
+                          type="tel"
+                          value={reporter.phone}
+                          onChange={(e) =>
+                            updateReporter(idx, "phone", e.target.value)
+                          }
+                          placeholder="+880 1XXXXXXXXX"
+                          className="h-9 text-sm"
+                          data-ocid={`settings.reporter.phone.input.${idx + 1}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <Button
-          onClick={handleSave}
-          disabled={updateSettings.isPending}
-          className="bg-news-red hover:bg-news-red-dark text-white"
-          data-ocid="admin.save_button"
-        >
-          {updateSettings.isPending ? (
-            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4 mr-1" />
-          )}
-          সেটিংস সংরক্ষণ করুন
-        </Button>
+        {/* ── Section 5: যোগাযোগ তথ্য ── */}
+        <div className="border rounded-xl overflow-hidden shadow-sm">
+          <div className="bg-muted/40 px-4 py-3 border-b flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className="text-xs font-semibold text-news-red border-news-red/40 bg-news-red/5"
+            >
+              ০৫
+            </Badge>
+            <h3 className="font-semibold text-sm">যোগাযোগ তথ্য</h3>
+          </div>
+          <div className="p-5 space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="contactEmail">যোগাযোগ ইমেইল</Label>
+              <Input
+                id="contactEmail"
+                type="email"
+                value={form.contactEmail}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, contactEmail: e.target.value }))
+                }
+                placeholder="baligawnews.bd@gmail.com"
+                data-ocid="settings.contact_email.input"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="footerText">ফুটার টেক্সট</Label>
+              <Textarea
+                id="footerText"
+                value={form.footerText}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, footerText: e.target.value }))
+                }
+                placeholder="© বালিগাঁও নিউজ। সর্বস্বত্ব সংরক্ষিত।"
+                rows={2}
+                data-ocid="settings.footer_text.textarea"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Save Button ── */}
+        <div className="flex justify-end pt-2">
+          <Button
+            onClick={handleSave}
+            disabled={updateSettings.isPending}
+            className="bg-news-red hover:bg-news-red-dark text-white px-8"
+            data-ocid="settings.save_button"
+          >
+            {updateSettings.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            সেটিংস সংরক্ষণ করুন
+          </Button>
+        </div>
       </div>
     </div>
   );

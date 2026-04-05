@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Article } from "../backend.d";
 import { useActor } from "./useActor";
+import { useInternetIdentity } from "./useInternetIdentity";
 
 // ─── Local types (do not import from backend.d.ts) ────────────────────────────
 export type RSSItem = {
@@ -21,11 +22,23 @@ export type FeedSource = {
   enabled: boolean;
 };
 
+export type Reporter = {
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
+};
+
 export type SiteSettings = {
   siteName: string;
   tagline: string;
   contactEmail: string;
   footerText: string;
+  editorName: string;
+  editorEmail: string;
+  editorPhone: string;
+  address: string;
+  reporters: Reporter[];
 };
 
 // ─── Existing hooks ───────────────────────────────────────────────────────────
@@ -124,13 +137,17 @@ export function useCategories() {
 
 export function useIsAdmin() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const principalStr = identity?.getPrincipal().toString() ?? "anonymous";
   return useQuery<boolean>({
-    queryKey: ["isAdmin"],
+    // Include principal in key so it re-fetches after login/logout
+    queryKey: ["isAdmin", principalStr],
     queryFn: async () => {
       if (!actor) return false;
       return (actor as any).isCallerAdmin();
     },
     enabled: !!actor && !isFetching,
+    staleTime: 0,
   });
 }
 
@@ -387,7 +404,17 @@ export function useSiteSettings() {
     queryKey: ["siteSettings"],
     queryFn: async () => {
       if (!actor)
-        return { siteName: "", tagline: "", contactEmail: "", footerText: "" };
+        return {
+          siteName: "",
+          tagline: "",
+          contactEmail: "",
+          footerText: "",
+          editorName: "",
+          editorEmail: "",
+          editorPhone: "",
+          address: "",
+          reporters: [],
+        };
       return (actor as any).getSiteSettings();
     },
     enabled: !!actor && !isFetching,
